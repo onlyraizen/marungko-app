@@ -63,9 +63,9 @@ importers:
       '@marungko/shared':
         specifier: workspace:*
         version: link:../packages/shared
-      '@siteed/expo-audio-studio':
-        specifier: ^3.2.2
-        version: 3.2.2(@expo/config-plugins@57.0.9(typescript@6.0.3))(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
+      '@siteed/audio-studio':
+        specifier: ^3.2.1
+        version: 3.2.1(@expo/config-plugins@57.0.9(typescript@6.0.3))(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
       expo:
         specifier: ~57.0.26
         version: 57.0.26(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@57.0.16)(expo-router@57.0.24)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.1(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
@@ -1245,10 +1245,6 @@ packages:
       expo: '>=52.0.0'
       react: '*'
       react-native: '*'
-
-  '@siteed/expo-audio-studio@3.2.2':
-    resolution: {integrity: sha512-vXlw6xpCtU59cPL1tRslzsxV0cWJrbYb0eUZBiWVphcbK9xTigmgJjKZNSgQa/6AKDT2CCGL8wtt+44dPcN6AA==}
-    deprecated: 'Deprecated: use @siteed/audio-studio instead. This compatibility shim only re-exports @siteed/audio-studio.'
 
   '@types/body-parser@1.19.6':
     resolution: {integrity: sha512-HLFeCYgz89uk22N5Qg3dvGvsv46B8GLvKKo1zKG4NybA8U2DiEO3w9lqGg29t/tfLRJpJ6iQxnVw4OnB7MoM9g==}
@@ -4684,15 +4680,6 @@ snapshots:
       expo: 57.0.26(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@57.0.16)(expo-router@57.0.24)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.1(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
       react: 19.2.3
       react-native: 0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3)
-
-  '@siteed/expo-audio-studio@3.2.2(@expo/config-plugins@57.0.9(typescript@6.0.3))(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@siteed/audio-studio': 3.2.1(@expo/config-plugins@57.0.9(typescript@6.0.3))(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
-    transitivePeerDependencies:
-      - '@expo/config-plugins'
-      - expo
-      - react
-      - react-native
 
   '@types/body-parser@1.19.6':
     dependencies:

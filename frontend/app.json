@@ -34,11 +34,19 @@
         }
       ],
       "expo-audio",
-      "expo-secure-store"
+      "expo-secure-store",
+      "@siteed/audio-studio"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b29bc560-7f2d-4d78-bc28-be25b72f04a0"
+      }
+    },
+    "owner": "mitsunishi"
   }
 }

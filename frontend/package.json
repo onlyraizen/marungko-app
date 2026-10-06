@@ -5,7 +5,7 @@
   "dependencies": {
     "@expo/ui": "~57.0.21",
     "@marungko/shared": "workspace:*",
-    "@siteed/expo-audio-studio": "^3.2.2",
+    "@siteed/audio-studio": "^3.2.1",
     "expo": "~57.0.26",
     "expo-audio": "~57.0.5",
     "expo-constants": "~57.0.20",
@@ -39,6 +39,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "eas-build-post-install": "pnpm --dir .. run build:shared",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
