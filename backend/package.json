@@ -17,6 +17,7 @@
     "@marungko/shared": "workspace:*",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.7.1",
     "jose": "^6.0.0",
     "zod": "^4.0.0"
   },
