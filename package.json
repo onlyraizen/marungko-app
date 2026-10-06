@@ -1,0 +1,36 @@
+{
+  "name": "marungko-app",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Marungko Tagalog literacy app: Expo frontend, Express backend, shared schemas, Supabase.",
+  "packageManager": "pnpm@10.34.6",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "workspaces": [
+    "frontend",
+    "backend",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:shared": "pnpm --filter ./packages/shared dev",
+    "dev:backend": "pnpm --filter ./backend dev",
+    "dev:frontend": "pnpm build:shared && pnpm --filter ./frontend start",
+    "build": "pnpm -r --if-present build",
+    "build:shared": "pnpm --filter ./packages/shared build",
+    "build:backend": "pnpm build:shared && pnpm --filter ./backend build",
+    "typecheck": "pnpm build:shared && pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
+    "content:validate": "tsx scripts/validate-content.ts",
+    "content:seed": "tsx --env-file=backend/.env scripts/seed-curriculum.ts",
+    "content:tts": "tsx --env-file=backend/.env scripts/generate-tts.ts",
+    "content:bundle-audio": "tsx scripts/bundle-offline-audio.ts",
+    "clean": "rimraf backend/dist packages/shared/dist frontend/.expo"
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}
