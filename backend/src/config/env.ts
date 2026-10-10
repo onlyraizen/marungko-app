@@ -58,6 +58,7 @@ const EnvSchema = z
     SONIOX_API_KEY: secret,
     SONIOX_TEMP_KEY_TTL_SECONDS: positiveInt(1, 3600).default(60),
     SONIOX_MAX_SESSION_SECONDS: positiveInt(1, 3600).default(60),
+    SONIOX_ASYNC_MODEL: z.string().trim().min(1),
   })
   .refine(
     (env) => env.NODE_ENV !== "production" || env.SUPABASE_URL.startsWith("https://"),
