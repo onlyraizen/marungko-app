@@ -1,17 +1,20 @@
 import type { Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import LiveTranscript from "../components/LiveTranscript";
 import MicSpike from "../components/MicSpike";
 import SignIn from "../components/SignIn";
 import { supabase } from "../services/supabase";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-/** Phase 1 home: sign in, prove the backend accepts our token, open the mic spike. */
+type Screen = "home" | "mic" | "live";
+
+/** Phase 1 home: sign in, prove the backend accepts our token, open the voice spikes. */
 export default function HomeScreen() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
-  const [showMic, setShowMic] = useState(false);
+  const [screen, setScreen] = useState<Screen>("home");
   const [check, setCheck] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,13 +62,13 @@ export default function HomeScreen() {
     return <SignIn />;
   }
 
-  if (showMic) {
+  if (screen !== "home") {
     return (
       <View style={styles.flex}>
-        <Pressable style={styles.back} onPress={() => setShowMic(false)}>
+        <Pressable style={styles.back} onPress={() => setScreen("home")}>
           <Text style={styles.backText}>Back</Text>
         </Pressable>
-        <MicSpike />
+        {screen === "mic" ? <MicSpike /> : <LiveTranscript />}
       </View>
     );
   }
@@ -80,7 +83,11 @@ export default function HomeScreen() {
       </Pressable>
       {check ? <Text style={styles.result}>{check}</Text> : null}
 
-      <Pressable style={styles.button} onPress={() => setShowMic(true)}>
+      <Pressable style={styles.button} onPress={() => setScreen("live")}>
+        <Text style={styles.buttonText}>Live transcript</Text>
+      </Pressable>
+
+      <Pressable style={styles.button} onPress={() => setScreen("mic")}>
         <Text style={styles.buttonText}>Open mic spike</Text>
       </Pressable>
 
