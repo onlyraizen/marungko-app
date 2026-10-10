@@ -1,0 +1,10 @@
+{
+  "id": "unit-03",
+  "title": "Tt Kk Ll Yy",
+  "kind": "letters",
+  "letters": ["t", "k", "l", "y"],
+  "sounds": ["t", "k", "l", "y"],
+  "syllables": ["ta", "te", "ti", "to", "tu", "ka", "ke", "ki", "ko", "ku", "la", "le", "li", "lo", "lu", "ya", "ye", "yo", "yu"],
+  "words": ["mata", "bata", "kama", "lima", "mali", "bola", "tasa", "yaya", "yelo"],
+  "review": "draft"
+}

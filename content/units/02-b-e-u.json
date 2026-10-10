@@ -1,0 +1,10 @@
+{
+  "id": "unit-02",
+  "title": "Bb Ee Uu",
+  "kind": "letters",
+  "letters": ["b", "e", "u"],
+  "sounds": ["b", "e", "u"],
+  "syllables": ["ba", "be", "bi", "bo", "bu", "me", "se", "mu", "su"],
+  "words": ["baso", "mesa", "ubas", "ube", "abo", "sabi"],
+  "review": "draft"
+}

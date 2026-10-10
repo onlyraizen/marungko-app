@@ -1,0 +1,7 @@
+{
+  "id": "theme-bagay",
+  "title": "Mga Bagay",
+  "kind": "theme",
+  "words": ["bahay", "mesa", "libro", "lapis", "papel", "bola"],
+  "review": "draft"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "unit-01",
+  "title": "Mm Aa Ss Ii Oo",
+  "kind": "letters",
+  "letters": ["m", "a", "s", "i", "o"],
+  "sounds": ["m", "a", "s", "i", "o"],
+  "syllables": ["ma", "sa", "mi", "si", "mo", "so"],
+  "words": ["ama", "asa", "isa", "mama", "masa", "misa", "sama", "mais", "aso"],
+  "review": "draft"
+}
