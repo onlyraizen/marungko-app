@@ -4,11 +4,12 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import LiveTranscript from "../components/LiveTranscript";
 import MicSpike from "../components/MicSpike";
 import SignIn from "../components/SignIn";
+import WordExercise from "../components/WordExercise";
 import { supabase } from "../services/supabase";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-type Screen = "home" | "mic" | "live";
+type Screen = "home" | "mic" | "live" | "word";
 
 /** Phase 1 home: sign in, prove the backend accepts our token, open the voice spikes. */
 export default function HomeScreen() {
@@ -68,7 +69,9 @@ export default function HomeScreen() {
         <Pressable style={styles.back} onPress={() => setScreen("home")}>
           <Text style={styles.backText}>Back</Text>
         </Pressable>
-        {screen === "mic" ? <MicSpike /> : <LiveTranscript />}
+        {screen === "mic" ? <MicSpike /> : null}
+        {screen === "live" ? <LiveTranscript /> : null}
+        {screen === "word" ? <WordExercise /> : null}
       </View>
     );
   }
@@ -82,6 +85,10 @@ export default function HomeScreen() {
         <Text style={styles.buttonText}>Check backend login</Text>
       </Pressable>
       {check ? <Text style={styles.result}>{check}</Text> : null}
+
+      <Pressable style={styles.button} onPress={() => setScreen("word")}>
+        <Text style={styles.buttonText}>Say the word</Text>
+      </Pressable>
 
       <Pressable style={styles.button} onPress={() => setScreen("live")}>
         <Text style={styles.buttonText}>Live transcript</Text>
