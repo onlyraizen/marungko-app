@@ -1,21 +1,24 @@
+import { UNITS, unitItems, type Unit } from "@marungko/shared";
 import type { Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import LiveTranscript from "../components/LiveTranscript";
 import MicSpike from "../components/MicSpike";
 import SignIn from "../components/SignIn";
+import UnitList from "../components/UnitList";
 import WordExercise from "../components/WordExercise";
 import { supabase } from "../services/supabase";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-type Screen = "home" | "mic" | "live" | "word";
+type Screen = "home" | "mic" | "live" | "units" | "practice";
 
-/** Phase 1 home: sign in, prove the backend accepts our token, open the voice spikes. */
+/** Phase 1 home: sign in, prove the backend accepts our token, open lessons and the voice spikes. */
 export default function HomeScreen() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
   const [screen, setScreen] = useState<Screen>("home");
+  const [unit, setUnit] = useState<Unit | null>(null);
   const [check, setCheck] = useState<string | null>(null);
 
   useEffect(() => {
@@ -64,14 +67,32 @@ export default function HomeScreen() {
   }
 
   if (screen !== "home") {
+    const goBack = () => {
+      if (screen === "practice") setScreen("units");
+      else setScreen("home");
+    };
+    // Letter sounds have no recordings yet, so only syllables and words are spoken.
+    const items = unit ? unitItems(unit).filter((item) => item.kind !== "sound").map((item) => item.text) : [];
+
     return (
       <View style={styles.flex}>
-        <Pressable style={styles.back} onPress={() => setScreen("home")}>
+        <Pressable style={styles.back} onPress={goBack}>
           <Text style={styles.backText}>Back</Text>
         </Pressable>
         {screen === "mic" ? <MicSpike /> : null}
         {screen === "live" ? <LiveTranscript /> : null}
-        {screen === "word" ? <WordExercise /> : null}
+        {screen === "units" ? (
+          <UnitList
+            units={UNITS}
+            onSelect={(selected) => {
+              setUnit(selected);
+              setScreen("practice");
+            }}
+          />
+        ) : null}
+        {screen === "practice" && unit ? (
+          <WordExercise key={unit.id} title={unit.title} items={items} onDone={() => setScreen("units")} />
+        ) : null}
       </View>
     );
   }
@@ -81,14 +102,14 @@ export default function HomeScreen() {
       <Text style={styles.title}>Signed in</Text>
       <Text style={styles.line}>{session.user.email}</Text>
 
+      <Pressable style={styles.button} onPress={() => setScreen("units")}>
+        <Text style={styles.buttonText}>Mga Aralin</Text>
+      </Pressable>
+
       <Pressable style={styles.button} onPress={checkBackend}>
         <Text style={styles.buttonText}>Check backend login</Text>
       </Pressable>
       {check ? <Text style={styles.result}>{check}</Text> : null}
-
-      <Pressable style={styles.button} onPress={() => setScreen("word")}>
-        <Text style={styles.buttonText}>Say the word</Text>
-      </Pressable>
 
       <Pressable style={styles.button} onPress={() => setScreen("live")}>
         <Text style={styles.buttonText}>Live transcript</Text>

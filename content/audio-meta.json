@@ -1,0 +1,830 @@
+{
+  "ama": {
+    "text": "ama",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 3,
+    "compiledAt": "2026-10-16T04:13:15.233Z"
+  },
+  "asa": {
+    "text": "asa",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "4-calm-slow",
+    "gainDb": 0.5,
+    "compiledAt": "2026-10-16T04:13:15.239Z"
+  },
+  "isa": {
+    "text": "isa",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 4.7,
+    "compiledAt": "2026-10-16T04:13:15.244Z"
+  },
+  "mama": {
+    "text": "mama",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "5-speed85",
+    "gainDb": 3,
+    "compiledAt": "2026-10-16T04:13:15.248Z"
+  },
+  "masa": {
+    "text": "masa",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "5-speed85",
+    "gainDb": 1.6,
+    "compiledAt": "2026-10-16T04:13:15.253Z"
+  },
+  "misa": {
+    "text": "misa",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 1.7,
+    "compiledAt": "2026-10-16T04:13:15.258Z"
+  },
+  "sama": {
+    "text": "sama",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 1.7,
+    "compiledAt": "2026-10-16T04:13:15.263Z"
+  },
+  "mais": {
+    "text": "mais",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 0.6,
+    "compiledAt": "2026-10-16T04:13:15.267Z"
+  },
+  "aso": {
+    "text": "aso",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 2.6,
+    "compiledAt": "2026-10-16T04:13:15.270Z"
+  },
+  "baso": {
+    "text": "baso",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "4-calm-slow",
+    "gainDb": 1.9,
+    "compiledAt": "2026-10-16T04:13:15.272Z"
+  },
+  "mesa": {
+    "text": "mesa",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 1.2,
+    "compiledAt": "2026-10-16T04:13:15.275Z"
+  },
+  "ubas": {
+    "text": "ubas",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "3-slow",
+    "gainDb": 10.7,
+    "compiledAt": "2026-10-16T04:13:15.278Z"
+  },
+  "ube": {
+    "text": "ube",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 3.7,
+    "compiledAt": "2026-10-16T04:13:15.280Z"
+  },
+  "abo": {
+    "text": "abo",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "3-slow",
+    "gainDb": 1.8,
+    "compiledAt": "2026-10-16T04:13:15.282Z"
+  },
+  "sabi": {
+    "text": "sabi",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 2.5,
+    "compiledAt": "2026-10-16T04:13:15.285Z"
+  },
+  "mata": {
+    "text": "mata",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 1.5,
+    "compiledAt": "2026-10-16T04:13:15.288Z"
+  },
+  "bata": {
+    "text": "bata",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": -2.3,
+    "compiledAt": "2026-10-16T04:13:15.290Z"
+  },
+  "kama": {
+    "text": "kama",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": -0.8,
+    "compiledAt": "2026-10-16T04:13:15.292Z"
+  },
+  "lima": {
+    "text": "lima",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 1.5,
+    "compiledAt": "2026-10-16T04:13:15.295Z"
+  },
+  "mali": {
+    "text": "mali",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 2.3,
+    "compiledAt": "2026-10-16T04:13:15.297Z"
+  },
+  "bola": {
+    "text": "bola",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "4-calm-slow",
+    "gainDb": -0.5,
+    "compiledAt": "2026-10-16T04:13:15.299Z"
+  },
+  "tasa": {
+    "text": "tasa",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 1.8,
+    "compiledAt": "2026-10-16T04:13:15.301Z"
+  },
+  "yaya": {
+    "text": "yaya",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "5-speed85",
+    "gainDb": 1.9,
+    "compiledAt": "2026-10-16T04:13:15.304Z"
+  },
+  "yelo": {
+    "text": "yelo",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": -0.8,
+    "compiledAt": "2026-10-16T04:13:15.306Z"
+  },
+  "ina": {
+    "text": "ina",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 1.6,
+    "compiledAt": "2026-10-16T04:13:15.308Z"
+  },
+  "ibon": {
+    "text": "ibon",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "3-slow",
+    "gainDb": 3.5,
+    "compiledAt": "2026-10-16T04:13:15.311Z"
+  },
+  "pusa": {
+    "text": "pusa",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 3,
+    "compiledAt": "2026-10-16T04:13:15.314Z"
+  },
+  "pato": {
+    "text": "pato",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "5-speed85",
+    "gainDb": -1.5,
+    "compiledAt": "2026-10-16T04:13:15.316Z"
+  },
+  "puso": {
+    "text": "puso",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 3.8,
+    "compiledAt": "2026-10-16T04:13:15.318Z"
+  },
+  "dila": {
+    "text": "dila",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "4-calm-slow",
+    "gainDb": 5,
+    "compiledAt": "2026-10-16T04:13:15.320Z"
+  },
+  "araw": {
+    "text": "araw",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 2.8,
+    "compiledAt": "2026-10-16T04:13:15.322Z"
+  },
+  "ilaw": {
+    "text": "ilaw",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": -2.2,
+    "compiledAt": "2026-10-16T04:13:15.324Z"
+  },
+  "bahay": {
+    "text": "bahay",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "5-speed85",
+    "gainDb": 0.9,
+    "compiledAt": "2026-10-16T04:13:15.327Z"
+  },
+  "gatas": {
+    "text": "gatas",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 2.1,
+    "compiledAt": "2026-10-16T04:13:15.329Z"
+  },
+  "dalawa": {
+    "text": "dalawa",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "5-speed85",
+    "gainDb": -0.1,
+    "compiledAt": "2026-10-16T04:13:15.331Z"
+  },
+  "tatlo": {
+    "text": "tatlo",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 2.1,
+    "compiledAt": "2026-10-16T04:13:15.332Z"
+  },
+  "apat": {
+    "text": "apat",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "3-slow",
+    "gainDb": 0.9,
+    "compiledAt": "2026-10-16T04:13:15.334Z"
+  },
+  "anim": {
+    "text": "anim",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 0.9,
+    "compiledAt": "2026-10-16T04:13:15.336Z"
+  },
+  "pito": {
+    "text": "pito",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 1.4,
+    "compiledAt": "2026-10-16T04:13:15.338Z"
+  },
+  "walo": {
+    "text": "walo",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 1.2,
+    "compiledAt": "2026-10-16T04:13:15.340Z"
+  },
+  "siyam": {
+    "text": "siyam",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 3.8,
+    "compiledAt": "2026-10-16T04:13:15.343Z"
+  },
+  "sampu": {
+    "text": "sampu",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "3-slow",
+    "gainDb": 3.2,
+    "compiledAt": "2026-10-16T04:13:15.345Z"
+  },
+  "isda": {
+    "text": "isda",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "5-speed85",
+    "gainDb": 1.9,
+    "compiledAt": "2026-10-16T04:13:15.347Z"
+  },
+  "baka": {
+    "text": "baka",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 1.1,
+    "compiledAt": "2026-10-16T04:13:15.349Z"
+  },
+  "kabayo": {
+    "text": "kabayo",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "4-calm-slow",
+    "gainDb": 2.4,
+    "compiledAt": "2026-10-16T04:13:15.351Z"
+  },
+  "manok": {
+    "text": "manok",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "4-calm-slow",
+    "gainDb": 2.1,
+    "compiledAt": "2026-10-16T04:13:15.353Z"
+  },
+  "nanay": {
+    "text": "nanay",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 2.3,
+    "compiledAt": "2026-10-16T04:13:15.355Z"
+  },
+  "tatay": {
+    "text": "tatay",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 2.5,
+    "compiledAt": "2026-10-16T04:13:15.357Z"
+  },
+  "ate": {
+    "text": "ate",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 2,
+    "compiledAt": "2026-10-16T04:13:15.359Z"
+  },
+  "kuya": {
+    "text": "kuya",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 3.5,
+    "compiledAt": "2026-10-16T04:13:15.361Z"
+  },
+  "lola": {
+    "text": "lola",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": -0.1,
+    "compiledAt": "2026-10-16T04:13:15.363Z"
+  },
+  "lolo": {
+    "text": "lolo",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": -0.9,
+    "compiledAt": "2026-10-16T04:13:15.364Z"
+  },
+  "ilong": {
+    "text": "ilong",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "4-calm-slow",
+    "gainDb": 1.7,
+    "compiledAt": "2026-10-16T04:13:15.366Z"
+  },
+  "bibig": {
+    "text": "bibig",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 1.7,
+    "compiledAt": "2026-10-16T04:13:15.368Z"
+  },
+  "tenga": {
+    "text": "tenga",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 0.2,
+    "compiledAt": "2026-10-16T04:13:15.370Z"
+  },
+  "kamay": {
+    "text": "kamay",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": -1.5,
+    "compiledAt": "2026-10-16T04:13:15.372Z"
+  },
+  "paa": {
+    "text": "paa",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 0.8,
+    "compiledAt": "2026-10-16T04:13:15.374Z"
+  },
+  "saging": {
+    "text": "saging",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": -0.9,
+    "compiledAt": "2026-10-16T04:13:15.376Z"
+  },
+  "mansanas": {
+    "text": "mansanas",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": -0.8,
+    "compiledAt": "2026-10-16T04:13:15.378Z"
+  },
+  "mangga": {
+    "text": "mangga",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 1.7,
+    "compiledAt": "2026-10-16T04:13:15.380Z"
+  },
+  "tubig": {
+    "text": "tubig",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 2,
+    "compiledAt": "2026-10-16T04:13:15.382Z"
+  },
+  "kanin": {
+    "text": "kanin",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": -0.6,
+    "compiledAt": "2026-10-16T04:13:15.384Z"
+  },
+  "tinapay": {
+    "text": "tinapay",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 5.2,
+    "compiledAt": "2026-10-16T04:13:15.386Z"
+  },
+  "pula": {
+    "text": "pula",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "4-calm-slow",
+    "gainDb": 1.2,
+    "compiledAt": "2026-10-16T04:13:15.388Z"
+  },
+  "asul": {
+    "text": "asul",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 5,
+    "compiledAt": "2026-10-16T04:13:15.390Z"
+  },
+  "dilaw": {
+    "text": "dilaw",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 1.1,
+    "compiledAt": "2026-10-16T04:13:15.392Z"
+  },
+  "berde": {
+    "text": "berde",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 1.6,
+    "compiledAt": "2026-10-16T04:13:15.394Z"
+  },
+  "puti": {
+    "text": "puti",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 3.2,
+    "compiledAt": "2026-10-16T04:13:15.396Z"
+  },
+  "itim": {
+    "text": "itim",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 3.5,
+    "compiledAt": "2026-10-16T04:13:15.398Z"
+  },
+  "kahel": {
+    "text": "kahel",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "3-slow",
+    "gainDb": 7,
+    "compiledAt": "2026-10-16T04:13:15.400Z"
+  },
+  "buwan": {
+    "text": "buwan",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": -0.4,
+    "compiledAt": "2026-10-16T04:13:15.402Z"
+  },
+  "bituin": {
+    "text": "bituin",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 0.6,
+    "compiledAt": "2026-10-16T04:13:15.404Z"
+  },
+  "puno": {
+    "text": "puno",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 0.4,
+    "compiledAt": "2026-10-16T04:13:15.406Z"
+  },
+  "dahon": {
+    "text": "dahon",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 0.2,
+    "compiledAt": "2026-10-16T04:13:15.408Z"
+  },
+  "bulaklak": {
+    "text": "bulaklak",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 3.3,
+    "compiledAt": "2026-10-16T04:13:15.410Z"
+  },
+  "salamat": {
+    "text": "salamat",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 2.2,
+    "compiledAt": "2026-10-16T04:13:15.412Z"
+  },
+  "po": {
+    "text": "po",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": -2,
+    "compiledAt": "2026-10-16T04:13:15.413Z"
+  },
+  "opo": {
+    "text": "opo",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": -1,
+    "compiledAt": "2026-10-16T04:13:15.415Z"
+  },
+  "magandang-umaga": {
+    "text": "magandang umaga",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 0.5,
+    "compiledAt": "2026-10-16T04:13:15.418Z"
+  },
+  "libro": {
+    "text": "libro",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 1.7,
+    "compiledAt": "2026-10-16T04:13:15.420Z"
+  },
+  "lapis": {
+    "text": "lapis",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "5-speed85",
+    "gainDb": -0.6,
+    "compiledAt": "2026-10-16T04:13:15.422Z"
+  },
+  "papel": {
+    "text": "papel",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "5-speed85",
+    "gainDb": 1.3,
+    "compiledAt": "2026-10-16T04:13:15.424Z"
+  },
+  "tama": {
+    "text": "Tama!",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": -0.9,
+    "compiledAt": "2026-10-16T04:13:15.426Z"
+  },
+  "magaling": {
+    "text": "Magaling!",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "4-calm-slow",
+    "gainDb": -0.5,
+    "compiledAt": "2026-10-16T04:13:15.428Z"
+  },
+  "husay": {
+    "text": "Husay!",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": -0.3,
+    "compiledAt": "2026-10-16T04:13:15.430Z"
+  },
+  "subukan-ulit": {
+    "text": "Subukan ulit.",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "3-slow",
+    "gainDb": 5.5,
+    "compiledAt": "2026-10-16T04:13:15.433Z"
+  },
+  "halos-na": {
+    "text": "Halos na!",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 3.2,
+    "compiledAt": "2026-10-16T04:13:15.435Z"
+  },
+  "pakinggan-mo": {
+    "text": "Pakinggan mo.",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "4-calm-slow",
+    "gainDb": 0.6,
+    "compiledAt": "2026-10-16T04:13:15.437Z"
+  },
+  "basahin-mo": {
+    "text": "Basahin mo.",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "3-slow",
+    "gainDb": 2.3,
+    "compiledAt": "2026-10-16T04:13:15.439Z"
+  },
+  "sabihin-mo": {
+    "text": "Sabihin mo.",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "1-plain",
+    "gainDb": 3,
+    "compiledAt": "2026-10-16T04:13:15.442Z"
+  },
+  "handa-ka-na-ba": {
+    "text": "Handa ka na ba?",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "2-period",
+    "gainDb": 2,
+    "compiledAt": "2026-10-16T04:13:15.444Z"
+  },
+  "magaling-tapos-na-ang-aralin": {
+    "text": "Magaling, tapos na ang aralin!",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "variant": "3-slow",
+    "gainDb": 1.3,
+    "compiledAt": "2026-10-16T04:13:15.447Z"
+  }
+}

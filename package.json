@@ -24,10 +24,13 @@
     "lint": "pnpm -r --if-present lint",
     "content:validate": "tsx scripts/validate-content.mts",
     "content:seed": "tsx --env-file=backend/.env scripts/seed-curriculum.ts",
-    "content:tts": "tsx --env-file=backend/.env scripts/generate-tts.ts",
     "content:bundle-audio": "tsx scripts/bundle-offline-audio.ts",
     "clean": "rimraf backend/dist packages/shared/dist frontend/.expo",
-    "content:count": "tsx scripts/count-characters.mts"
+    "content:count": "tsx scripts/count-characters.mts",
+    "content:build": "tsx scripts/build-content.mts",
+    "content:audio": "tsx --env-file=backend/.env scripts/generate-audio.mts",
+    "voice:trial": "tsx --env-file=backend/.env scripts/voice-trial.mts",
+    "content:compile-audio": "tsx scripts/compile-audio.mts"
   },
   "devDependencies": {
     "rimraf": "^6.0.0",
