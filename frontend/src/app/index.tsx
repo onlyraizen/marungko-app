@@ -1,17 +1,27 @@
 import { UNITS, unitItems, type MatchResult, type Unit } from "@marungko/shared";
 import type { Session } from "@supabase/supabase-js";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Book from "../components/book/Book";
+import AwardsScreen from "../components/app/AwardsScreen";
+import LogoutSheet from "../components/app/LogoutSheet";
+import MoreSheet, { type MoreChoice } from "../components/app/MoreSheet";
+import ProfileScreen from "../components/app/ProfileScreen";
+import ReviewScreen from "../components/app/ReviewScreen";
+import SettingsScreen from "../components/app/SettingsScreen";
+import TabBar, { type TabId } from "../components/app/TabBar";
+import AuthFlow from "../components/auth/AuthFlow";
+import { DarkPage, SigningIn, darkStyles } from "../components/auth/dark";
+import { buildBookViews } from "../components/book/books";
+import PondPath from "../components/book/PondPath";
+import Shelf from "../components/book/Shelf";
 import ChildPicker from "../components/ChildPicker";
+import LessonScreen from "../components/lesson/LessonScreen";
 import LiveTranscript from "../components/LiveTranscript";
 import MicSpike from "../components/MicSpike";
-import ProfileMenu from "../components/ProfileMenu";
-import SignIn from "../components/SignIn";
+import Splash from "../components/Splash";
 import Button3D from "../components/ui/Button3D";
 import TopBar from "../components/ui/TopBar";
-import WordExercise from "../components/WordExercise";
 import {
   completeUnit,
   createChild,
@@ -27,10 +37,12 @@ import { useAppStore, useStoreHydrated } from "../store/useAppStore";
 import { colors } from "../theme/colors";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
+const REVIEW_ROUND = 6;
+const NO_WORDS: string[] = [];
 
-type Screen = "path" | "menu" | "practice" | "live" | "mic";
+type View_ = "main" | "lesson" | "review" | "settings" | "live" | "mic";
 
-/** Sign in, choose the child, then the storybook with saved progress. */
+/** Sign in, choose the child, then the tabs: the shelf of books, review, awards and profile. */
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [session, setSession] = useState<Session | null>(null);
@@ -40,17 +52,35 @@ export default function HomeScreen() {
   const setActiveChildId = useAppStore((state) => state.setActiveChildId);
   const unlockAll = useAppStore((state) => state.unlockAll);
   const setUnlockAll = useAppStore((state) => state.setUnlockAll);
+  const slowGuide = useAppStore((state) => state.slowGuide);
+  const setSlowGuide = useAppStore((state) => state.setSlowGuide);
+  const missedByChild = useAppStore((state) => state.missed);
+  const addMissed = useAppStore((state) => state.addMissed);
+  const clearMissed = useAppStore((state) => state.clearMissed);
 
   const [kids, setKids] = useState<Child[] | null>(null);
   const [progress, setProgress] = useState<ReadonlyMap<string, UnitProgress>>(new Map());
-  // Which child the loaded progress belongs to, so the book never shows another child's pages.
+  // Which child the loaded progress belongs to, so the path never shows another child's lessons.
   const [progressFor, setProgressFor] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [screen, setScreen] = useState<Screen>("path");
+  const [view, setView] = useState<View_>("main");
+  const [tab, setTab] = useState<TabId>("libro");
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [bookId, setBookId] = useState<string | null>(null);
+  const [splashDone, setSplashDone] = useState(false);
   const [unit, setUnit] = useState<Unit | null>(null);
+  const [reviewWords, setReviewWords] = useState<string[]>(NO_WORDS);
   const [check, setCheck] = useState<string | null>(null);
 
   const userId = session?.user.id;
+
+  // The splash shows for a moment on every launch, then the app takes over.
+  useEffect(() => {
+    const timer = setTimeout(() => setSplashDone(true), 1900);
+    return () => clearTimeout(timer);
+  }, []);
+
   const activeChild = useMemo(
     () => kids?.find((kid) => kid.id === activeChildId) ?? null,
     [kids, activeChildId],
@@ -72,7 +102,11 @@ export default function HomeScreen() {
       setProgress(new Map());
       setProgressFor(null);
       setActiveChildId(null);
-      setScreen("path");
+      setView("main");
+      setTab("libro");
+      setBookId(null);
+      setLogoutOpen(false);
+      setMoreOpen(false);
     }
   }, [ready, userId, setActiveChildId]);
 
@@ -95,11 +129,52 @@ export default function HomeScreen() {
     void refresh();
   }, [refresh, activeChildId]);
 
+  const missed = (activeChild && missedByChild[activeChild.id]) || NO_WORDS;
+
+  /** A word the child read or tapped: right takes it off the review list, wrong puts it on. */
+  const markWord = useCallback(
+    (word: string, ok: boolean) => {
+      if (!activeChild) return;
+      if (ok) clearMissed(activeChild.id, word);
+      else addMissed(activeChild.id, word);
+    },
+    [activeChild, addMissed, clearMissed],
+  );
+
   const handleAttempt = useCallback(
     (item: string, heard: string, kind: MatchResult["kind"]) => {
-      if (activeChild && unit) void recordAttempt({ childId: activeChild.id, unitId: unit.id, item, heard, kind });
+      if (!activeChild) return;
+      if (unit && unit.words.includes(item)) markWord(item, kind === "correct");
+      else if (view === "review") markWord(item, kind === "correct");
+      if (view === "lesson" && unit) void recordAttempt({ childId: activeChild.id, unitId: unit.id, item, heard, kind });
     },
-    [activeChild, unit],
+    [activeChild, unit, view, markWord],
+  );
+
+  const handleQuizAnswer = useCallback(
+    (word: string, ok: boolean, heard: string, skipped: boolean) => {
+      if (!activeChild) return;
+      markWord(word, ok);
+      if (view === "lesson" && unit) {
+        void recordAttempt({
+          childId: activeChild.id,
+          unitId: unit.id,
+          item: word,
+          heard: skipped ? "[skipped]" : heard,
+          kind: ok ? "correct" : "incorrect",
+        });
+      }
+    },
+    [activeChild, unit, view, markWord],
+  );
+
+  const handleNote = useCallback(
+    (item: string, note: string) => {
+      if (activeChild && unit && view === "lesson") {
+        void recordAttempt({ childId: activeChild.id, unitId: unit.id, item, heard: `[${note}]`, kind: "incorrect" });
+      }
+    },
+    [activeChild, unit, view],
   );
 
   const handleComplete = useCallback(
@@ -122,10 +197,29 @@ export default function HomeScreen() {
   );
 
   const signOut = useCallback(() => {
+    setLogoutOpen(false);
     setActiveChildId(null);
-    setScreen("path");
+    setView("main");
     void supabase.auth.signOut();
   }, [setActiveChildId]);
+
+  const switchChild = useCallback(() => {
+    setView("main");
+    setTab("libro");
+    setBookId(null);
+    setActiveChildId(null);
+  }, [setActiveChildId]);
+
+  const startReview = () => {
+    setReviewWords(missed.slice(0, REVIEW_ROUND));
+    setView("review");
+  };
+
+  const chooseMore = (choice: MoreChoice) => {
+    setMoreOpen(false);
+    if (choice === "settings") setView("settings");
+    else setTab(choice);
+  };
 
   const checkBackend = async () => {
     if (!API_URL || !session) {
@@ -155,27 +249,35 @@ export default function HomeScreen() {
     }
   };
 
-  if (!ready) {
-    return <ActivityIndicator style={styles.loading} color={colors.primary} />;
+  const books = useMemo(
+    () => buildBookViews(UNITS, (unitId) => progress.has(unitId), unlockAll),
+    [progress, unlockAll],
+  );
+  const openBook = books.find((entry) => entry.id === bookId) ?? null;
+
+  if (!ready || !splashDone) {
+    return <Splash />;
   }
 
   if (!session) {
-    return <SignIn />;
+    return <AuthFlow />;
   }
 
   if (loadError && kids === null) {
     return (
-      <View style={[styles.centered, { paddingTop: insets.top + 40 }]}>
-        <Text style={styles.errorTitle}>Hindi ma-load ang data</Text>
-        <Text style={styles.errorText}>{loadError}</Text>
-        <Button3D label="Subukan ulit" onPress={() => void refresh()} />
-        <Button3D label="Sign out" tone="neutral" onPress={signOut} />
-      </View>
+      <DarkPage>
+        <View style={styles.errorBox}>
+          <Text style={darkStyles.title}>Hindi ma-load ang data</Text>
+          <Text style={darkStyles.body}>{loadError}</Text>
+          <Button3D label="Subukan ulit" onPress={() => void refresh()} />
+          <Button3D label="Mag-log out" tone="outlineLight" onPress={signOut} />
+        </View>
+      </DarkPage>
     );
   }
 
   if (!hydrated || kids === null) {
-    return <ActivityIndicator style={styles.loading} color={colors.primary} />;
+    return <SigningIn />;
   }
 
   if (!activeChild) {
@@ -189,89 +291,154 @@ export default function HomeScreen() {
     );
   }
 
-  if (screen === "menu") {
+  const yuzu = Math.floor(activeChild.xp / 10);
+
+  if (view === "lesson" && unit) {
+    // Letter sounds have no recordings yet, so only syllables and words are spoken.
+    const items = unitItems(unit).filter((item) => item.kind !== "sound").map((item) => item.text);
     return (
-      <ProfileMenu
-        childName={activeChild.display_name}
-        email={session.user.email ?? ""}
-        unlockAll={unlockAll}
-        check={check}
-        onToggleUnlock={() => setUnlockAll(!unlockAll)}
-        onSwitchChild={() => {
-          setScreen("path");
-          setActiveChildId(null);
-        }}
-        onCheckBackend={() => void checkBackend()}
-        onOpenLive={() => setScreen("live")}
-        onOpenMic={() => setScreen("mic")}
-        onSignOut={signOut}
-        onClose={() => setScreen("path")}
+      <LessonScreen
+        key={unit.id}
+        title={unit.title}
+        items={items}
+        words={unit.words}
+        baseYuzu={yuzu}
+        onDone={() => setView("main")}
+        onAttempt={handleAttempt}
+        onQuizAnswer={handleQuizAnswer}
+        onNote={handleNote}
+        onComplete={handleComplete}
       />
     );
   }
 
-  if (screen === "practice" || screen === "live" || screen === "mic") {
-    // Letter sounds have no recordings yet, so only syllables and words are spoken.
-    const items = unit ? unitItems(unit).filter((item) => item.kind !== "sound").map((item) => item.text) : [];
+  if (view === "review" && reviewWords.length > 0) {
     return (
-      // The lesson screens still have the light look until the lesson-screen batch restyles them.
+      <LessonScreen
+        key={`review:${reviewWords.join(",")}`}
+        title="Balik-aral"
+        items={reviewWords}
+        words={reviewWords}
+        baseYuzu={yuzu}
+        review
+        onDone={() => setView("main")}
+        onAttempt={handleAttempt}
+        onQuizAnswer={handleQuizAnswer}
+      />
+    );
+  }
+
+  if (view === "live" || view === "mic") {
+    // Developer tools keep their plain look.
+    return (
       <View style={[styles.legacy, { paddingTop: insets.top }]}>
-        <Pressable
-          style={styles.back}
-          onPress={() => setScreen(screen === "practice" ? "path" : "menu")}
-          accessibilityRole="button"
-        >
+        <Pressable style={styles.back} onPress={() => setView("settings")} accessibilityRole="button">
           <Text style={styles.backText}>Back</Text>
         </Pressable>
-        {screen === "mic" ? <MicSpike /> : null}
-        {screen === "live" ? <LiveTranscript /> : null}
-        {screen === "practice" && unit ? (
-          <WordExercise
-            key={unit.id}
-            title={unit.title}
-            items={items}
-            onDone={() => setScreen("path")}
-            onAttempt={handleAttempt}
-            onComplete={handleComplete}
-          />
-        ) : null}
+        {view === "mic" ? <MicSpike /> : null}
+        {view === "live" ? <LiveTranscript /> : null}
       </View>
     );
   }
 
-  return (
-    <View style={styles.root}>
-      <TopBar
-        name={activeChild.display_name}
-        streak={activeChild.streak_days}
-        xp={activeChild.xp}
-        onPress={() => setScreen("menu")}
-      />
-      {progressFor === activeChild.id ? (
-        <Book
-          key={activeChild.id}
-          childId={activeChild.id}
-          units={UNITS}
-          progress={progress}
+  if (view === "settings") {
+    return (
+      <View style={styles.fill}>
+        <SettingsScreen
+          childName={activeChild.display_name}
+          email={session.user.email ?? ""}
+          slow={slowGuide}
+          onSlow={setSlowGuide}
           unlockAll={unlockAll}
-          onStart={(selected) => {
-            setUnit(selected);
-            setScreen("practice");
-          }}
+          onUnlockAll={setUnlockAll}
+          check={check}
+          onCheckBackend={() => void checkBackend()}
+          onOpenLive={() => setView("live")}
+          onOpenMic={() => setView("mic")}
+          onSwitchChild={switchChild}
+          onLogout={() => setLogoutOpen(true)}
+          onClose={() => setView("main")}
         />
-      ) : (
-        <ActivityIndicator style={styles.loading} color={colors.primary} />
-      )}
+        {logoutOpen ? <LogoutSheet onStay={() => setLogoutOpen(false)} onLogout={signOut} /> : null}
+      </View>
+    );
+  }
+
+  const openSettings = () => setView("settings");
+  const loaded = progressFor === activeChild.id;
+  const inBook = tab === "libro" && openBook !== null && loaded;
+
+  return (
+    <View style={styles.fill}>
+      <View style={styles.fill}>
+        {tab === "libro" ? (
+          <View style={styles.fill}>
+            {!inBook ? (
+              <TopBar
+                name={activeChild.display_name}
+                streak={activeChild.streak_days}
+                yuzu={yuzu}
+                onProfile={() => setTab("profile")}
+                onSettings={openSettings}
+              />
+            ) : null}
+            {!loaded ? (
+              <SigningIn />
+            ) : openBook ? (
+              <PondPath
+                key={`${activeChild.id}:${openBook.id}`}
+                childId={activeChild.id}
+                view={openBook}
+                allUnits={UNITS}
+                progress={progress}
+                unlockAll={unlockAll}
+                onBack={() => setBookId(null)}
+                onStart={(selected) => {
+                  setUnit(selected);
+                  setView("lesson");
+                }}
+              />
+            ) : (
+              <Shelf books={books} onOpen={(entry) => setBookId(entry.id)} />
+            )}
+          </View>
+        ) : null}
+        {tab === "review" ? <ReviewScreen words={missed} onStart={startReview} onSettings={openSettings} /> : null}
+        {tab === "awards" ? (
+          <AwardsScreen books={books} progress={progress} streak={activeChild.streak_days} xp={activeChild.xp} onSettings={openSettings} />
+        ) : null}
+        {tab === "profile" ? (
+          <ProfileScreen
+            name={activeChild.display_name}
+            streak={activeChild.streak_days}
+            yuzu={yuzu}
+            xp={activeChild.xp}
+            lessonsDone={progress.size}
+            onSwitchChild={switchChild}
+            onSettings={openSettings}
+          />
+        ) : null}
+      </View>
+      <TabBar
+        active={moreOpen ? "more" : tab}
+        reviewCount={missed.length}
+        onSelect={(next) => {
+          if (next === "more") {
+            setMoreOpen(!moreOpen);
+            return;
+          }
+          setMoreOpen(false);
+          setTab(next);
+        }}
+      />
+      {moreOpen ? <MoreSheet onChoose={chooseMore} onClose={() => setMoreOpen(false)} /> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  loading: { marginTop: 120 },
-  centered: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24, gap: 14 },
-  errorTitle: { color: colors.text, fontSize: 26, fontWeight: "800" },
-  errorText: { color: colors.muted, fontSize: 15 },
+  fill: { flex: 1, backgroundColor: colors.bg },
+  errorBox: { flex: 1, justifyContent: "center", gap: 14 },
   legacy: { flex: 1, backgroundColor: "#FFFFFF" },
   back: { paddingHorizontal: 24, paddingTop: 12 },
   backText: { color: "#1f6feb", fontSize: 18 },
