@@ -1,8 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { book } from "../../theme/book";
 import { colors, radius } from "../../theme/colors";
-import CapybaraHead from "../art/CapybaraHead";
+import { font } from "../../theme/fonts";
+import { CapiFace } from "../art/Capi";
 
 type Props = { name: string; streak: number; xp: number; onPress: () => void };
 
@@ -22,7 +22,7 @@ export default function TopBar({ name, streak, xp, onPress }: Props) {
     <View style={[styles.bar, { paddingTop: insets.top + 8 }]}>
       <Pressable onPress={onPress} style={styles.who} accessibilityRole="button" accessibilityLabel="Menu">
         <View style={styles.avatar}>
-          <CapybaraHead size={42} blink={false} />
+          <CapiFace size={40} />
         </View>
         <Text style={styles.name} numberOfLines={1}>
           {name}
@@ -43,23 +43,23 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 14,
     paddingBottom: 10,
-    backgroundColor: book.cover,
-    borderBottomWidth: 4,
-    borderBottomColor: book.coverDark,
+    backgroundColor: colors.brown,
+    borderBottomWidth: 5,
+    borderBottomColor: "#4E2D13",
   },
   who: { flexDirection: "row", alignItems: "center", gap: 10, flexShrink: 1 },
   avatar: {
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.brownLight,
     borderWidth: 2,
-    borderColor: book.coverDark,
+    borderColor: "#4E2D13",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
-  name: { fontSize: 18, fontWeight: "800", color: book.paper, flexShrink: 1 },
+  name: { fontFamily: font.display, fontSize: 21, color: colors.surface, flexShrink: 1 },
   pills: { flexDirection: "row", gap: 8 },
   pill: {
     flexDirection: "row",
@@ -71,5 +71,5 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   pillIcon: { fontSize: 16 },
-  pillValue: { fontSize: 16, fontWeight: "800", color: book.ink },
+  pillValue: { fontFamily: font.bold, fontSize: 16, color: colors.ink },
 });

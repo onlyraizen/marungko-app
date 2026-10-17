@@ -1,8 +1,9 @@
 import type { Unit } from "@marungko/shared";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import { font } from "../../theme/fonts";
 import { book } from "../../theme/book";
-import FrogArt from "../art/FrogArt";
+import Frog from "../art/Frog";
 import CapyNode, { FROG_DX, FROG_DY, FROG_H, FROG_W, NODE_H, NODE_W } from "./CapyNode";
 import PondDecor from "./PondDecor";
 import { iconFor, starsFor, type BookPageData, type UnitState } from "./pages";
@@ -53,7 +54,6 @@ export default function BookPage({
   const frogAt = (i: number) => ({ x: cxOf(i) - NODE_W / 2 + FROG_DX, y: topOf(i) + FROG_DY });
 
   const doneCount = page.units.filter((unit) => states.get(unit.id) === "done").length;
-  const pageDone = doneCount === n;
   const firstUnfinished = page.units.findIndex((unit) => states.get(unit.id) !== "done");
   const savedIdx = page.units.findIndex((unit) => unit.id === petUnitId);
   const targetIdx = unlockAll && savedIdx >= 0 ? savedIdx : firstUnfinished >= 0 ? firstUnfinished : n - 1;
@@ -73,7 +73,6 @@ export default function BookPage({
   const atRef = useRef(startIdx);
   const busy = useRef(false);
   const alive = useRef(true);
-  const [hopping, setHopping] = useState(false);
   const [shake, setShake] = useState<{ id: string; n: number }>({ id: "", n: 0 });
 
   useEffect(
@@ -102,7 +101,6 @@ export default function BookPage({
       return;
     }
     busy.current = true;
-    setHopping(true);
     const to = frogAt(idx);
     dir.setValue(to.x >= frogAt(atRef.current).x ? 1 : -1);
     Animated.sequence([
@@ -129,7 +127,6 @@ export default function BookPage({
       atRef.current = idx;
       busy.current = false;
       if (!alive.current) return;
-      setHopping(false);
       const id = page.units[idx]?.id;
       if (id) onPetSettled?.(id);
       done?.();
@@ -226,7 +223,7 @@ export default function BookPage({
         }}
       >
         <Animated.View style={{ transform: [{ scaleY: breath }] }}>
-          <FrogArt size={FROG_W} mood={hopping || pageDone ? "cheer" : "happy"} />
+          <Frog size={FROG_W} air={lift} />
         </Animated.View>
       </Animated.View>
     </View>
@@ -271,7 +268,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     zIndex: 10,
   },
-  ribbonTitle: { color: "#FFFFFF", fontSize: 20, fontWeight: "800", flexShrink: 1 },
+  ribbonTitle: { color: "#FFFFFF", fontFamily: font.display, fontSize: 24, flexShrink: 1 },
   count: { backgroundColor: "rgba(255,255,255,0.22)", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
-  countText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
+  countText: { color: "#FFFFFF", fontFamily: font.bold, fontSize: 15 },
 });

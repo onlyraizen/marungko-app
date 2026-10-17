@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Animated, Easing, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import { useAppStore } from "../../store/useAppStore";
 import { book } from "../../theme/book";
+import { colors } from "../../theme/colors";
+import { font } from "../../theme/fonts";
 import Button3D from "../ui/Button3D";
 import BookPage from "./BookPage";
 import { buildPages, type UnitState } from "./pages";
@@ -10,7 +12,12 @@ import { buildPages, type UnitState } from "./pages";
 type Progress = ReadonlyMap<string, { best_correct: number; total: number }>;
 type Props = {
   childId: string;
+  /** Every lesson, so locks and progress are worked out across all books. */
   units: readonly Unit[];
+  /** The pond pages that belong to the open book (see books.ts). */
+  pageIds: readonly string[];
+  bookTitle: string;
+  onBack: () => void;
   progress: Progress;
   /** Demo switch: open every page and lesson regardless of progress. */
   unlockAll: boolean;
@@ -51,9 +58,10 @@ function PaperBack() {
 }
 
 /** The storybook: pages of capybaras in a pond, a frog hopping between them, and pages that turn. */
-export default function Book({ childId, units, progress, unlockAll, onStart }: Props) {
-  const pages = useMemo(() => buildPages(units), [units]);
-  const playable = useMemo(() => pages.flatMap((page) => page.units), [pages]);
+export default function Book({ childId, units, pageIds, bookTitle, onBack, progress, unlockAll, onStart }: Props) {
+  const allPages = useMemo(() => buildPages(units), [units]);
+  const pages = useMemo(() => allPages.filter((page) => pageIds.includes(page.id)), [allPages, pageIds]);
+  const playable = useMemo(() => allPages.flatMap((page) => page.units), [allPages]);
 
   const states = useMemo(() => {
     const map = new Map<string, UnitState>();
@@ -159,6 +167,11 @@ export default function Book({ childId, units, progress, unlockAll, onStart }: P
 
   return (
     <View style={styles.frame}>
+      <View style={styles.head}>
+        <Button3D label="◀ Mga libro" tone="neutral" small onPress={onBack} />
+        <Text style={styles.headTitle}>{bookTitle}</Text>
+        <View style={styles.headSpacer} />
+      </View>
       <View style={styles.pageArea} onLayout={onLayout}>
         {size && page ? (
           <>
@@ -293,10 +306,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     padding: 8,
     backgroundColor: book.cover,
-    borderRadius: 20,
+    borderRadius: 22,
     borderWidth: 2,
     borderColor: book.coverDark,
   },
+  head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 8, paddingHorizontal: 2 },
+  headTitle: { fontFamily: font.display, fontSize: 26, color: book.paper },
+  headSpacer: { width: 108 },
   pageArea: { flex: 1 },
   edgeFar: {
     position: "absolute",
@@ -319,7 +335,7 @@ const styles = StyleSheet.create({
   nav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 12, minHeight: 56 },
   navSide: { flex: 1, flexDirection: "row" },
   navRight: { justifyContent: "flex-end" },
-  counter: { color: book.paper, fontSize: 14, fontWeight: "700" },
+  counter: { color: book.paper, fontFamily: font.bold, fontSize: 14 },
   hint: {
     position: "absolute",
     left: 16,
@@ -330,14 +346,14 @@ const styles = StyleSheet.create({
     padding: 12,
     zIndex: 30,
   },
-  hintText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600", textAlign: "center" },
+  hintText: { color: "#FFFFFF", fontFamily: font.bold, fontSize: 15, textAlign: "center" },
   panel: {
     position: "absolute",
     left: 10,
     right: 10,
     bottom: 10,
-    backgroundColor: "#FFFDF5",
-    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
     borderWidth: 2,
     borderColor: book.paperLine,
     padding: 16,
@@ -346,13 +362,13 @@ const styles = StyleSheet.create({
     elevation: 40,
   },
   panelHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
-  panelTitle: { color: book.ink, fontSize: 22, fontWeight: "800", flexShrink: 1 },
-  panelMeta: { color: "#6B5A45", fontSize: 15 },
-  panelBest: { color: "#2F9553", fontSize: 15, fontWeight: "700" },
+  panelTitle: { color: book.ink, fontFamily: font.display, fontSize: 26, flexShrink: 1 },
+  panelMeta: { color: colors.muted, fontFamily: font.body, fontSize: 15 },
+  panelBest: { color: colors.primaryInk, fontFamily: font.bold, fontSize: 15 },
   panelButton: { marginTop: 8 },
   badge: {
     fontSize: 11,
-    fontWeight: "800",
+    fontFamily: font.bold,
     color: "#B07A00",
     borderWidth: 1,
     borderColor: "#B07A00",

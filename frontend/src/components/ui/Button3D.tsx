@@ -1,15 +1,16 @@
 import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from "react-native";
 import { colors, radius } from "../../theme/colors";
+import { font } from "../../theme/fonts";
 
 export type Tone = "primary" | "info" | "danger" | "accent" | "neutral" | "locked";
 
 const TONES: Record<Tone, { face: string; lip: string; text: string }> = {
-  primary: { face: colors.primary, lip: colors.primaryDark, text: colors.white },
-  info: { face: colors.info, lip: colors.infoDark, text: colors.ink },
+  primary: { face: colors.primary, lip: colors.primaryDark, text: "#1D3B1A" },
+  info: { face: colors.info, lip: colors.infoDark, text: "#12303F" },
   danger: { face: colors.danger, lip: colors.dangerDark, text: colors.white },
   accent: { face: colors.accent, lip: colors.accentDark, text: colors.ink },
-  neutral: { face: colors.surface, lip: colors.border, text: colors.text },
-  locked: { face: colors.locked, lip: colors.lockedDark, text: colors.muted },
+  neutral: { face: colors.white, lip: colors.line, text: colors.text },
+  locked: { face: colors.locked, lip: colors.lockedDark, text: colors.lockedInk },
 };
 
 type Props = {
@@ -36,7 +37,7 @@ export default function Button3D({ label, onPress, tone = "primary", disabled = 
         {
           backgroundColor: t.face,
           borderBottomColor: t.lip,
-          borderBottomWidth: pressed && !disabled ? 1 : 5,
+          borderBottomWidth: pressed && !disabled ? 2 : 6,
           marginTop: pressed && !disabled ? 4 : 0,
         },
         style,
@@ -49,13 +50,13 @@ export default function Button3D({ label, onPress, tone = "primary", disabled = 
 
 const styles = StyleSheet.create({
   base: {
+    minHeight: 56,
     borderRadius: radius.md,
-    paddingVertical: 15,
     paddingHorizontal: 20,
     alignItems: "center",
     justifyContent: "center",
   },
-  small: { paddingVertical: 10, paddingHorizontal: 14 },
-  label: { fontSize: 16, fontWeight: "800", letterSpacing: 0.8, textTransform: "uppercase" },
-  labelSmall: { fontSize: 13 },
+  small: { minHeight: 44, paddingHorizontal: 14 },
+  label: { fontFamily: font.bold, fontSize: 17, letterSpacing: 1.4, textTransform: "uppercase" },
+  labelSmall: { fontSize: 13, letterSpacing: 1 },
 });

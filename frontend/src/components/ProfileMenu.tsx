@@ -1,6 +1,7 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../theme/colors";
+import { font } from "../theme/fonts";
 import Button3D from "./ui/Button3D";
 
 type Props = {
@@ -53,9 +54,9 @@ export default function ProfileMenu(props: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   container: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
-  title: { color: colors.text, fontSize: 30, fontWeight: "800" },
-  muted: { color: colors.muted, fontSize: 14, marginBottom: 8 },
-  section: { color: colors.muted, fontSize: 13, fontWeight: "800", letterSpacing: 1, marginTop: 16, textTransform: "uppercase" },
-  result: { color: colors.text, fontSize: 14 },
+  title: { color: colors.text, fontFamily: font.display, fontSize: 34 },
+  muted: { color: colors.muted, fontFamily: font.body, fontSize: 14, marginBottom: 8 },
+  section: { color: colors.muted, fontFamily: font.bold, fontSize: 13, letterSpacing: 1, marginTop: 16, textTransform: "uppercase" },
+  result: { color: colors.text, fontFamily: font.body, fontSize: 14 },
   gap: { height: 16 },
 });

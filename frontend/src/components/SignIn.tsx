@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../services/supabase";
 import { colors, radius } from "../theme/colors";
+import { font } from "../theme/fonts";
 import Button3D from "./ui/Button3D";
 import Mascot from "./ui/Mascot";
 
@@ -65,7 +66,7 @@ export default function SignIn() {
       >
         <View style={styles.hero}>
           <Mascot size={130} mood="cheer" />
-          <Text style={styles.title}>Marungko</Text>
+          <Text style={styles.title}>Basa-Bata</Text>
           <Text style={styles.subtitle}>{isSignIn ? "Pag-sign in ng magulang" : "Gumawa ng account ng magulang"}</Text>
         </View>
 
@@ -118,19 +119,20 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   container: { paddingHorizontal: 24, paddingBottom: 40, gap: 14 },
   hero: { alignItems: "center", gap: 6, marginBottom: 12 },
-  title: { color: colors.text, fontSize: 36, fontWeight: "800" },
-  subtitle: { color: colors.muted, fontSize: 17 },
+  title: { color: colors.text, fontFamily: font.display, fontSize: 44 },
+  subtitle: { color: colors.muted, fontFamily: font.body, fontSize: 17 },
   input: {
     borderWidth: 2,
     borderColor: colors.border,
     borderRadius: radius.md,
     padding: 14,
     fontSize: 18,
+    fontFamily: font.body,
     color: colors.text,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.white,
   },
-  message: { color: colors.danger, fontSize: 15 },
+  message: { color: colors.dangerDark, fontFamily: font.bold, fontSize: 15 },
   spinner: { marginVertical: 12 },
   link: { alignItems: "center", paddingVertical: 10 },
-  linkText: { color: colors.infoDark, fontSize: 16, fontWeight: "600" },
+  linkText: { color: colors.infoInk, fontFamily: font.bold, fontSize: 16 },
 });

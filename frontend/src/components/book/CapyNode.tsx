@@ -1,23 +1,15 @@
 import { useEffect, useRef } from "react";
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { colors } from "../../theme/colors";
+import { font } from "../../theme/fonts";
 import { book } from "../../theme/book";
-import CapybaraHead from "../art/CapybaraHead";
-import { Bubbles, Ripples } from "../art/WaterFx";
+import PondCapy from "../art/PondCapy";
+import { FROG_BOX, FROG_DX, FROG_DY, NODE_H, NODE_W, WATER_BOTTOM } from "../art/pondGeometry";
 import type { UnitState } from "./pages";
 
-export const NODE_W = 150;
-export const NODE_H = 156;
-export const WATER_Y = 110;
-export const HEAD_W = 120;
-const CUT_OPEN = 78;
-const CUT_LOCKED = 54;
-
-/** Where the hero frog sits, relative to a node: on top of the capybara's head. */
-export const FROG_W = 52;
-export const FROG_H = 42;
-export const FROG_DX = (NODE_W - FROG_W) / 2;
-export const FROG_DY = WATER_Y - CUT_OPEN + 16 - FROG_H;
+export { FROG_DX, FROG_DY, NODE_H, NODE_W };
+export const FROG_W = FROG_BOX;
+export const FROG_H = FROG_BOX;
 
 const STATE_LABEL: Record<UnitState, string> = {
   done: "tapos na",
@@ -31,41 +23,21 @@ type Props = {
   icon: string;
   stars: number;
   title: string;
-  /** Change this number to make the capybara shake its head (a locked lesson was tapped). */
+  /** Change this number to make the capybara shake (a locked lesson was tapped). */
   shakeKey: number;
   phase: number;
   onPress: () => void;
 };
 
-/** One lesson: a capybara in the pond. Locked ones are mostly under water, asleep. */
+/** One lesson: a submerged capybara in the pond. Locked ones sink lower, asleep and dim. */
 export default function CapyNode({ state, icon, stars, title, shakeKey, phase, onPress }: Props) {
   const locked = state === "locked";
-  const cut = locked ? CUT_LOCKED : CUT_OPEN;
-  const bob = useRef(new Animated.Value(0)).current;
   const shake = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    bob.setValue(0);
-    const amount = locked ? 1.5 : 3;
-    const duration = 1300 + phase * 150;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bob, { toValue: -amount, duration, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(bob, { toValue: 0, duration, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [bob, locked, phase]);
-
-  useEffect(() => {
     if (shakeKey === 0) return;
-    Animated.sequence(
-      [7, -7, 5, -5, 0].map((value) => Animated.timing(shake, { toValue: value, duration: 70, useNativeDriver: true })),
-    ).start();
+    Animated.sequence([7, -7, 5, -5, 0].map((value) => Animated.timing(shake, { toValue: value, duration: 70, useNativeDriver: true }))).start();
   }, [shakeKey, shake]);
-
-  const mood = locked ? "sleep" : state === "done" ? "cheer" : "happy";
 
   return (
     <Pressable
@@ -79,52 +51,19 @@ export default function CapyNode({ state, icon, stars, title, shakeKey, phase, o
         transform: [{ scale: pressed ? 0.97 : 1 }],
       })}
     >
-      {/* the capybara's body, seen through the water */}
-      <View style={[styles.body, { opacity: locked ? 0.28 : 0.42 }]} />
-
-      <Animated.View
-        style={{
-          position: "absolute",
-          left: (NODE_W - HEAD_W) / 2,
-          top: WATER_Y - cut,
-          width: HEAD_W,
-          height: cut,
-          overflow: "hidden",
-          transform: [{ translateX: shake }],
-        }}
-      >
-        <Animated.View style={{ opacity: locked ? 0.8 : 1, transform: [{ translateY: bob }] }}>
-          <CapybaraHead size={HEAD_W} mood={mood} />
-        </Animated.View>
+      <Animated.View style={{ transform: [{ translateX: shake }] }}>
+        <PondCapy sleeping={locked} phase={phase} />
       </Animated.View>
 
-      {/* the water line, and rings spreading from it */}
-      <Svg width={NODE_W} height={14} viewBox="0 0 150 14" style={{ position: "absolute", left: 0, top: WATER_Y - 7 }}>
-        <Path
-          d="M6 7 Q18 1 30 7 T54 7 T78 7 T102 7 T126 7 T144 7"
-          stroke="#FFFFFF"
-          strokeWidth={3}
-          strokeLinecap="round"
-          fill="none"
-          opacity={0.85}
-        />
-      </Svg>
-      <View pointerEvents="none" style={{ position: "absolute", left: (NODE_W - 116) / 2, top: WATER_Y - 9 }}>
-        <Ripples width={116} height={18} rings={2} />
-      </View>
-
       {locked ? (
-        <>
-          <View style={{ position: "absolute", left: 6, top: WATER_Y - 44 }}>
-            <Bubbles width={30} height={36} count={2} />
-          </View>
-          <View style={{ position: "absolute", right: 6, top: WATER_Y - 40 }}>
-            <Bubbles width={30} height={32} count={2} />
-          </View>
-          <View style={styles.lockChip}>
-            <Text style={styles.lockText}>🔒</Text>
-          </View>
-        </>
+        <View style={styles.lockChip}>
+          <Text style={styles.lockText}>🔒</Text>
+        </View>
+      ) : null}
+      {state === "current" ? (
+        <View style={styles.startChip}>
+          <Text style={styles.startText}>Ito na!</Text>
+        </View>
       ) : null}
 
       <View style={styles.labelWrap}>
@@ -143,50 +82,53 @@ export default function CapyNode({ state, icon, stars, title, shakeKey, phase, o
 }
 
 const styles = StyleSheet.create({
-  body: {
-    position: "absolute",
-    left: 14,
-    top: WATER_Y - 12,
-    width: 122,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: book.pondDeep,
-  },
   lockChip: {
     position: "absolute",
-    right: 22,
-    top: WATER_Y - 62,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.92)",
+    right: 10,
+    top: WATER_BOTTOM - 96,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(255,255,255,0.94)",
     alignItems: "center",
     justifyContent: "center",
   },
-  lockText: { fontSize: 14 },
-  labelWrap: { position: "absolute", left: 0, right: 0, top: WATER_Y + 14, alignItems: "center" },
+  lockText: { fontSize: 15 },
+  startChip: {
+    position: "absolute",
+    right: 4,
+    top: WATER_BOTTOM - 92,
+    backgroundColor: colors.accent,
+    borderRadius: 12,
+    borderBottomWidth: 3,
+    borderBottomColor: colors.accentDark,
+    paddingHorizontal: 9,
+    paddingVertical: 2,
+  },
+  startText: { fontFamily: font.bold, fontSize: 12, color: colors.ink },
+  labelWrap: { position: "absolute", left: 0, right: 0, top: WATER_BOTTOM + 2, alignItems: "center" },
   label: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    maxWidth: NODE_W - 4,
-    backgroundColor: "rgba(255,255,255,0.94)",
-    borderRadius: 12,
+    maxWidth: NODE_W - 6,
+    backgroundColor: "rgba(255,255,255,0.96)",
+    borderRadius: 14,
     paddingLeft: 4,
-    paddingRight: 9,
+    paddingRight: 10,
     paddingVertical: 3,
   },
   labelDim: { opacity: 0.8 },
   iconChip: {
-    minWidth: 24,
-    height: 22,
-    borderRadius: 8,
+    minWidth: 26,
+    height: 24,
+    borderRadius: 9,
     backgroundColor: book.paperShade,
-    paddingHorizontal: 4,
+    paddingHorizontal: 5,
     alignItems: "center",
     justifyContent: "center",
   },
-  iconText: { fontSize: 12, fontWeight: "800", color: book.ink },
-  labelText: { fontSize: 12, fontWeight: "800", color: book.ink, flexShrink: 1 },
+  iconText: { fontFamily: font.bold, fontSize: 13, color: book.ink },
+  labelText: { fontFamily: font.bold, fontSize: 13, color: book.ink, flexShrink: 1 },
   stars: { fontSize: 13, marginTop: 2 },
 });

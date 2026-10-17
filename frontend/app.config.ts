@@ -13,7 +13,7 @@ const pluginName = (entry: PluginEntry): string =>
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: "Marungko",
+  name: "Basa-Bata",
   slug: "marungko-app",
   scheme: "marungko",
   ios: {

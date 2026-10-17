@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Child } from "../services/progress";
 import { colors, radius } from "../theme/colors";
+import { font } from "../theme/fonts";
 import Button3D from "./ui/Button3D";
 import Mascot from "./ui/Mascot";
 
@@ -104,12 +105,12 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   container: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
   hero: { alignItems: "center", gap: 8, marginBottom: 8 },
-  title: { color: colors.text, fontSize: 28, fontWeight: "800", textAlign: "center" },
+  title: { color: colors.text, fontFamily: font.display, fontSize: 32, textAlign: "center" },
   card: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.white,
     borderRadius: radius.md,
     borderWidth: 2,
     borderBottomWidth: 5,
@@ -127,22 +128,23 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3,
     borderBottomColor: colors.infoDark,
   },
-  avatarText: { fontSize: 24, fontWeight: "800", color: colors.ink },
+  avatarText: { fontSize: 26, fontFamily: font.display, color: colors.ink },
   cardText: { gap: 2, flexShrink: 1 },
-  cardTitle: { color: colors.text, fontSize: 22, fontWeight: "700" },
-  cardMeta: { color: colors.muted, fontSize: 14 },
+  cardTitle: { color: colors.text, fontFamily: font.display, fontSize: 24 },
+  cardMeta: { color: colors.muted, fontFamily: font.body, fontSize: 14 },
   form: { gap: 10, marginTop: 12 },
-  formTitle: { color: colors.text, fontSize: 18, fontWeight: "700" },
+  formTitle: { color: colors.text, fontFamily: font.bold, fontSize: 18 },
   input: {
     borderWidth: 2,
     borderColor: colors.border,
     borderRadius: radius.md,
     padding: 14,
     fontSize: 18,
+    fontFamily: font.body,
     color: colors.text,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.white,
   },
-  hint: { color: colors.muted, fontSize: 13 },
-  message: { color: colors.danger, fontSize: 15 },
+  hint: { color: colors.muted, fontFamily: font.body, fontSize: 13 },
+  message: { color: colors.dangerDark, fontFamily: font.bold, fontSize: 15 },
   signOut: { marginTop: 12 },
 });

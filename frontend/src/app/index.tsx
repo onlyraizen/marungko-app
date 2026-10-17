@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Book from "../components/book/Book";
+import { buildBookViews } from "../components/book/books";
+import Shelf from "../components/book/Shelf";
 import ChildPicker from "../components/ChildPicker";
 import LiveTranscript from "../components/LiveTranscript";
 import MicSpike from "../components/MicSpike";
@@ -11,7 +13,8 @@ import ProfileMenu from "../components/ProfileMenu";
 import SignIn from "../components/SignIn";
 import Button3D from "../components/ui/Button3D";
 import TopBar from "../components/ui/TopBar";
-import WordExercise from "../components/WordExercise";
+import LessonScreen from "../components/lesson/LessonScreen";
+import Splash from "../components/Splash";
 import {
   completeUnit,
   createChild,
@@ -25,10 +28,11 @@ import {
 import { supabase } from "../services/supabase";
 import { useAppStore, useStoreHydrated } from "../store/useAppStore";
 import { colors } from "../theme/colors";
+import { font } from "../theme/fonts";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-type Screen = "path" | "menu" | "practice" | "live" | "mic";
+type Screen = "shelf" | "book" | "menu" | "practice" | "live" | "mic";
 
 /** Sign in, choose the child, then the storybook with saved progress. */
 export default function HomeScreen() {
@@ -46,11 +50,20 @@ export default function HomeScreen() {
   // Which child the loaded progress belongs to, so the book never shows another child's pages.
   const [progressFor, setProgressFor] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [screen, setScreen] = useState<Screen>("path");
+  const [screen, setScreen] = useState<Screen>("shelf");
+  const [bookId, setBookId] = useState<string | null>(null);
+  const [splashDone, setSplashDone] = useState(false);
   const [unit, setUnit] = useState<Unit | null>(null);
   const [check, setCheck] = useState<string | null>(null);
 
   const userId = session?.user.id;
+
+  // The splash shows for a moment on every launch, then the app takes over.
+  useEffect(() => {
+    const timer = setTimeout(() => setSplashDone(true), 1900);
+    return () => clearTimeout(timer);
+  }, []);
+
   const activeChild = useMemo(
     () => kids?.find((kid) => kid.id === activeChildId) ?? null,
     [kids, activeChildId],
@@ -72,7 +85,7 @@ export default function HomeScreen() {
       setProgress(new Map());
       setProgressFor(null);
       setActiveChildId(null);
-      setScreen("path");
+      setScreen("shelf");
     }
   }, [ready, userId, setActiveChildId]);
 
@@ -123,7 +136,7 @@ export default function HomeScreen() {
 
   const signOut = useCallback(() => {
     setActiveChildId(null);
-    setScreen("path");
+    setScreen("shelf");
     void supabase.auth.signOut();
   }, [setActiveChildId]);
 
@@ -155,8 +168,14 @@ export default function HomeScreen() {
     }
   };
 
-  if (!ready) {
-    return <ActivityIndicator style={styles.loading} color={colors.primary} />;
+  const books = useMemo(
+    () => buildBookViews(UNITS, (unitId) => progress.has(unitId), unlockAll),
+    [progress, unlockAll],
+  );
+  const openBook = books.find((view) => view.id === bookId) ?? null;
+
+  if (!ready || !splashDone) {
+    return <Splash />;
   }
 
   if (!session) {
@@ -198,43 +217,43 @@ export default function HomeScreen() {
         check={check}
         onToggleUnlock={() => setUnlockAll(!unlockAll)}
         onSwitchChild={() => {
-          setScreen("path");
+          setScreen("shelf");
           setActiveChildId(null);
         }}
         onCheckBackend={() => void checkBackend()}
         onOpenLive={() => setScreen("live")}
         onOpenMic={() => setScreen("mic")}
         onSignOut={signOut}
-        onClose={() => setScreen("path")}
+        onClose={() => setScreen("shelf")}
       />
     );
   }
 
-  if (screen === "practice" || screen === "live" || screen === "mic") {
+  if (screen === "practice" && unit) {
     // Letter sounds have no recordings yet, so only syllables and words are spoken.
-    const items = unit ? unitItems(unit).filter((item) => item.kind !== "sound").map((item) => item.text) : [];
+    const items = unitItems(unit).filter((item) => item.kind !== "sound").map((item) => item.text);
     return (
-      // The lesson screens still have the light look until the lesson-screen batch restyles them.
+      <LessonScreen
+        key={unit.id}
+        title={unit.title}
+        items={items}
+        quizWords={unit.words}
+        onDone={() => setScreen(bookId ? "book" : "shelf")}
+        onAttempt={handleAttempt}
+        onComplete={handleComplete}
+      />
+    );
+  }
+
+  if (screen === "live" || screen === "mic") {
+    // Developer tools keep their plain look.
+    return (
       <View style={[styles.legacy, { paddingTop: insets.top }]}>
-        <Pressable
-          style={styles.back}
-          onPress={() => setScreen(screen === "practice" ? "path" : "menu")}
-          accessibilityRole="button"
-        >
+        <Pressable style={styles.back} onPress={() => setScreen("menu")} accessibilityRole="button">
           <Text style={styles.backText}>Back</Text>
         </Pressable>
         {screen === "mic" ? <MicSpike /> : null}
         {screen === "live" ? <LiveTranscript /> : null}
-        {screen === "practice" && unit ? (
-          <WordExercise
-            key={unit.id}
-            title={unit.title}
-            items={items}
-            onDone={() => setScreen("path")}
-            onAttempt={handleAttempt}
-            onComplete={handleComplete}
-          />
-        ) : null}
       </View>
     );
   }
@@ -247,11 +266,16 @@ export default function HomeScreen() {
         xp={activeChild.xp}
         onPress={() => setScreen("menu")}
       />
-      {progressFor === activeChild.id ? (
+      {progressFor !== activeChild.id ? (
+        <ActivityIndicator style={styles.loading} color={colors.primary} />
+      ) : screen === "book" && openBook ? (
         <Book
-          key={activeChild.id}
+          key={`${activeChild.id}:${openBook.id}`}
           childId={activeChild.id}
           units={UNITS}
+          pageIds={openBook.pages.map((page) => page.id)}
+          bookTitle={openBook.title}
+          onBack={() => setScreen("shelf")}
           progress={progress}
           unlockAll={unlockAll}
           onStart={(selected) => {
@@ -260,7 +284,13 @@ export default function HomeScreen() {
           }}
         />
       ) : (
-        <ActivityIndicator style={styles.loading} color={colors.primary} />
+        <Shelf
+          books={books}
+          onOpen={(view) => {
+            setBookId(view.id);
+            setScreen("book");
+          }}
+        />
       )}
     </View>
   );
@@ -270,8 +300,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   loading: { marginTop: 120 },
   centered: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24, gap: 14 },
-  errorTitle: { color: colors.text, fontSize: 26, fontWeight: "800" },
-  errorText: { color: colors.muted, fontSize: 15 },
+  errorTitle: { color: colors.text, fontFamily: font.display, fontSize: 28 },
+  errorText: { color: colors.muted, fontFamily: font.body, fontSize: 15 },
   legacy: { flex: 1, backgroundColor: "#FFFFFF" },
   back: { paddingHorizontal: 24, paddingTop: 12 },
   backText: { color: "#1f6feb", fontSize: 18 },
