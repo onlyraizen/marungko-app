@@ -1,62 +1,51 @@
-import { KEYWORDS } from "@marungko/shared";
+import { KEYWORDS, UNITS } from "@marungko/shared";
+import { CARDS } from "../art/cards";
 
-/** A picture for each lesson word. Emoji, so nothing extra to download. Draft until a teacher reviews it. */
-export const WORD_EMOJI: Readonly<Record<string, string>> = {
-  ama: "👨‍👧", asa: "🤞", isa: "1️⃣", mama: "👨", masa: "🫓", misa: "⛪", sama: "🤝", mais: "🌽", aso: "🐶",
-  baso: "🥤", mesa: "🍽️", ubas: "🍇", ube: "🍠", sabi: "💬",
-  mata: "👁️", bata: "🧒", kama: "🛏️", lima: "5️⃣", mali: "❌", bola: "⚽", tasa: "🍵", yaya: "🍼", yelo: "🧊",
-  ina: "👩", ibon: "🐦", pusa: "🐱", pato: "🦆", puso: "❤️", dila: "👅", araw: "☀️", ilaw: "💡", bahay: "🏠", gatas: "🥛",
-  dalawa: "2️⃣", tatlo: "3️⃣", apat: "4️⃣", anim: "6️⃣", pito: "7️⃣", walo: "8️⃣", siyam: "9️⃣", sampu: "🔟",
-  isda: "🐟", baka: "🐄", kabayo: "🐴", manok: "🐔",
-  nanay: "👩", tatay: "👨", ate: "👧", kuya: "👦", lola: "👵", lolo: "👴",
-  ilong: "👃", bibig: "👄", tenga: "👂", kamay: "✋", paa: "🦶",
-  saging: "🍌", mansanas: "🍎", mangga: "🥭", tubig: "💧", kanin: "🍚", tinapay: "🍞",
-  pula: "🔴", asul: "🔵", dilaw: "🟡", berde: "🟢", puti: "⚪", itim: "⚫", kahel: "🟠",
-  buwan: "🌙", bituin: "⭐", puno: "🌳", dahon: "🍃", bulaklak: "🌸",
-  salamat: "🙏", po: "🙇", opo: "👍", "magandang umaga": "🌅",
-  libro: "📖", lapis: "✏️", papel: "📄",
+/** A word that has a picture. The picture itself is drawn by WordPicture. */
+export type Picture = { word: string };
+
+/** Fallback emoji for the few words with no card and no drawn picture. */
+const EMOJI: Readonly<Record<string, string>> = {};
+
+export const NUMBERS: Readonly<Record<string, number>> = {
+  isa: 1, dalawa: 2, tatlo: 3, apat: 4, lima: 5, anim: 6, pito: 7, walo: 8, siyam: 9, sampu: 10,
 };
 
-export type Picture = { word: string; emoji: string };
+export const COLOR_WORDS: Readonly<Record<string, string>> = {
+  pula: "#E8473A", asul: "#2F7FD6", dilaw: "#F7C531", berde: "#4DB35A", puti: "#FFFFFF", itim: "#2B2B2B", kahel: "#F7902F",
+};
+
+/** The file key of a word's picture card: "magandang umaga" -> "magandang-umaga". */
+export const cardKey = (word: string): string => word.toLowerCase().trim().replace(/\s+/g, "-");
+
+export const hasCard = (word: string): boolean => CARDS[cardKey(word)] !== undefined;
+
+/** True when we can show something for the word: a card, a numeral, a colour swatch or an emoji. */
+export function hasPicture(word: string): boolean {
+  const key = word.toLowerCase();
+  return hasCard(key) || NUMBERS[key] !== undefined || COLOR_WORDS[key] !== undefined || EMOJI[key] !== undefined;
+}
+
+export const emojiFor = (word: string): string | undefined => EMOJI[word.toLowerCase()];
 
 /** The picture for a word, if we have one. */
 export function pictureOf(word: string): Picture | null {
-  const key = word.toLowerCase();
-  const emoji = WORD_EMOJI[key];
-  return emoji ? { word: key, emoji } : null;
+  return hasPicture(word) ? { word: word.toLowerCase() } : null;
 }
 
-/** The example word and picture for a syllable ("sa" gives saging). */
-export function exampleFor(syllable: string): Picture | null {
-  const found = KEYWORDS[syllable.toLowerCase()];
-  return found ? { word: found.word, emoji: found.emoji } : null;
-}
-
-export type QuizQuestion = { answer: Picture; options: Picture[] };
-
-const shuffle = <T,>(list: readonly T[]): T[] => {
-  const copy = [...list];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j] as T, copy[i] as T];
-  }
-  return copy;
-};
+const ALL_WORDS: readonly string[] = [...new Set(UNITS.flatMap((unit) => unit.words))];
 
 /**
- * "Select the correct picture" questions from the lesson's own words. Each has the right picture
- * and two others, never two with the same emoji. Words without a picture are skipped.
+ * The example word for a syllable ("sa" gives saging). `exclude` is skipped, so the example for "ba"
+ * in "bata" is not "bata" itself.
  */
-export function buildQuiz(words: readonly string[], count = 4): QuizQuestion[] {
-  const own = words.map(pictureOf).filter((p): p is Picture => p !== null);
-  const unique = own.filter((p, i) => own.findIndex((q) => q.emoji === p.emoji) === i);
-  const world = Object.entries(WORD_EMOJI).map(([word, emoji]) => ({ word, emoji }));
-  return shuffle(unique)
-    .slice(0, count)
-    .map((answer) => {
-      const near = shuffle(unique.filter((p) => p.emoji !== answer.emoji));
-      const far = shuffle(world.filter((p) => p.emoji !== answer.emoji && !near.some((n) => n.emoji === p.emoji)));
-      const distractors = [...near, ...far].slice(0, 2);
-      return { answer, options: shuffle([answer, ...distractors]) };
-    });
+export function exampleFor(syllable: string, exclude?: string): Picture | null {
+  const key = syllable.toLowerCase();
+  const skip = exclude?.toLowerCase();
+  const found = KEYWORDS[key];
+  if (found && found.word !== skip && hasPicture(found.word)) return { word: found.word };
+  const other = ALL_WORDS.filter((word) => word !== skip && !word.includes(" ") && word.startsWith(key) && hasPicture(word)).sort(
+    (a, b) => a.length - b.length,
+  )[0];
+  return other ? { word: other } : null;
 }

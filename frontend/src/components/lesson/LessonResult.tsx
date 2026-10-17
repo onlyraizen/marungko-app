@@ -12,9 +12,12 @@ import { lessonMessage } from "./lessonText";
 
 type Props = {
   title: string;
-  correct: number;
-  total: number;
-  quizScore: { correct: number; total: number } | null;
+  practice: { correct: number; total: number };
+  quiz: { correct: number; total: number } | null;
+  /** Yuzu earned in this lesson. */
+  yuzu: number;
+  /** Review ("Balik-aral"): there is no XP to show. */
+  review: boolean;
   summary: CompleteResult | null;
   saving: boolean;
   saveError: string | null;
@@ -32,7 +35,9 @@ function Tile({ label, value, tint }: { label: string; value: string; tint: stri
 }
 
 /** "Magaling!": Capi cheers, says how it went, and shows the XP earned. */
-export default function LessonResult({ title, correct, total, quizScore, summary, saving, saveError, guide, onDone }: Props) {
+export default function LessonResult({ title, practice, quiz, yuzu, review, summary, saving, saveError, guide, onDone }: Props) {
+  const correct = practice.correct + (quiz?.correct ?? 0);
+  const total = practice.total + (quiz?.total ?? 0);
   const insets = useSafeAreaInsets();
   const message = lessonMessage(correct, total);
   const spoken = useRef(false);
@@ -41,7 +46,7 @@ export default function LessonResult({ title, correct, total, quizScore, summary
   useEffect(() => {
     if (spoken.current) return;
     spoken.current = true;
-    const timer = setTimeout(() => guide.sayAll(saveError ? [message] : [message, "Nakakuha ka ng XP!"]), 500);
+    const timer = setTimeout(() => guide.sayAll(saveError || review ? [message] : [message, "Nakakuha ka ng XP!"]), 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -50,10 +55,10 @@ export default function LessonResult({ title, correct, total, quizScore, summary
     <View style={styles.root}>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 20 }]} showsVerticalScrollIndicator={false}>
         <Text style={styles.kicker}>{title}</Text>
-        <Text style={styles.heading}>Tapos na ang aralin!</Text>
+        <Text style={styles.heading}>{review ? "Tapos na ang balik-aral!" : "Tapos na ang aralin!"}</Text>
 
         <View style={styles.capi}>
-          <Capi pose={correct === total ? "cheer" : "nice"} size={230} />
+          <Capi pose={total > 0 && correct === total ? "cheer" : "nice"} size={230} />
           <Ground width={150} style={styles.ground} />
         </View>
 
@@ -62,15 +67,19 @@ export default function LessonResult({ title, correct, total, quizScore, summary
         </Bubble>
 
         <View style={styles.tiles}>
-          <Tile label="Tama" value={`${correct}/${total}`} tint={colors.primaryDark} />
-          {quizScore ? <Tile label="Larawan" value={`${quizScore.correct}/${quizScore.total}`} tint={colors.infoDark} /> : null}
-          <Tile label="XP" value={summary ? `+${summary.gained}` : saving ? "..." : "—"} tint={colors.accentDark} />
+          <Tile label="Pagbasa" value={`${practice.correct}/${practice.total}`} tint={colors.primaryDark} />
+          {quiz ? <Tile label="Pagsusulit" value={`${quiz.correct}/${quiz.total}`} tint={colors.infoDark} /> : null}
+          {review ? (
+            <Tile label="Yuzu" value={`+${yuzu}`} tint={colors.accentDark} />
+          ) : (
+            <Tile label="XP" value={summary ? `+${summary.gained}` : saving ? "..." : "—"} tint={colors.accentDark} />
+          )}
         </View>
 
         {saving ? <ActivityIndicator color={colors.primaryDark} /> : null}
         {summary ? (
           <Text style={styles.total}>
-            Kabuuan: {summary.xp} XP · 🔥 {summary.streak} araw na magkakasunod
+            Kabuuan: {summary.xp} XP · {summary.streak} araw na magkakasunod
           </Text>
         ) : null}
         {saveError ? <Text style={styles.error}>Hindi na-save ang progreso: {saveError}</Text> : null}
@@ -87,15 +96,15 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   scroll: { paddingHorizontal: 20, paddingBottom: 24, alignItems: "center", gap: 12 },
   kicker: { fontFamily: font.bold, fontSize: 13, letterSpacing: 1.4, color: colors.muted, textTransform: "uppercase" },
-  heading: { fontFamily: font.display, fontSize: 34, lineHeight: 40, color: colors.ink, textAlign: "center" },
+  heading: { fontFamily: font.display, fontSize: 34, lineHeight: 48, color: colors.ink, textAlign: "center" },
   capi: { alignItems: "center" },
   ground: { marginTop: -22 },
   bubble: { alignSelf: "stretch", marginTop: 8 },
-  message: { fontFamily: font.display, fontSize: 22, lineHeight: 30, color: colors.ink, textAlign: "center" },
+  message: { fontFamily: font.display, fontSize: 22, lineHeight: 32, color: colors.ink, textAlign: "center" },
   tiles: { flexDirection: "row", gap: 10, alignSelf: "stretch", marginTop: 8 },
   tile: { flex: 1, backgroundColor: colors.white, borderWidth: 2, borderBottomWidth: 5, borderRadius: 18, paddingVertical: 10, alignItems: "center" },
   tileLabel: { fontFamily: font.bold, fontSize: 12, letterSpacing: 1.2, color: colors.muted, textTransform: "uppercase" },
-  tileValue: { fontFamily: font.display, fontSize: 30, lineHeight: 36 },
+  tileValue: { fontFamily: font.display, fontSize: 30, lineHeight: 44, includeFontPadding: false },
   total: { fontFamily: font.bold, fontSize: 15, color: colors.ink, textAlign: "center" },
   error: { fontFamily: font.bold, fontSize: 14, color: colors.dangerDark, textAlign: "center" },
   footer: { paddingHorizontal: 20, paddingTop: 8 },

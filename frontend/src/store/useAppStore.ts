@@ -16,6 +16,14 @@ type AppState = {
   /** Slow mode: the guide voice plays slower so a child can hear each sound. */
   slowGuide: boolean;
   setSlowGuide: (value: boolean) => void;
+  /** Words each child missed, for "Balik-aral" (review). Cleared word by word as they get them right. */
+  missed: Record<string, string[]>;
+  addMissed: (childId: string, word: string) => void;
+  clearMissed: (childId: string, word: string) => void;
+  /** Emails that have signed in on this phone, for the "Maligayang pagbabalik" list. Never passwords. */
+  savedAccounts: string[];
+  rememberAccount: (email: string) => void;
+  forgetAccount: (email: string) => void;
 };
 
 export const useAppStore = create<AppState>()(
@@ -27,6 +35,21 @@ export const useAppStore = create<AppState>()(
       setUnlockAll: (value) => set({ unlockAll: value }),
       slowGuide: false,
       setSlowGuide: (value) => set({ slowGuide: value }),
+      missed: {},
+      addMissed: (childId, word) =>
+        set((state) => {
+          const list = state.missed[childId] ?? [];
+          return list.includes(word) ? state : { missed: { ...state.missed, [childId]: [...list, word] } };
+        }),
+      clearMissed: (childId, word) =>
+        set((state) => {
+          const list = state.missed[childId] ?? [];
+          return list.includes(word) ? { missed: { ...state.missed, [childId]: list.filter((w) => w !== word) } } : state;
+        }),
+      savedAccounts: [],
+      rememberAccount: (email) =>
+        set((state) => (state.savedAccounts.includes(email) ? state : { savedAccounts: [email, ...state.savedAccounts].slice(0, 5) })),
+      forgetAccount: (email) => set((state) => ({ savedAccounts: state.savedAccounts.filter((e) => e !== email) })),
       petUnit: {},
       setPetUnit: (childId, unitId) =>
         set((state) => (state.petUnit[childId] === unitId ? state : { petUnit: { ...state.petUnit, [childId]: unitId } })),

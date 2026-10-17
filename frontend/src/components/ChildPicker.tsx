@@ -10,12 +10,11 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Child } from "../services/progress";
-import { colors, radius } from "../theme/colors";
 import { font } from "../theme/fonts";
+import { dark, darkStyles, DarkPage, HelloCapi } from "./auth/dark";
 import Button3D from "./ui/Button3D";
-import Mascot from "./ui/Mascot";
+import TextLink from "./ui/TextLink";
 
 type Props = {
   kids: readonly Child[];
@@ -24,9 +23,8 @@ type Props = {
   onSignOut: () => void;
 };
 
-/** "Sino ang mag-aaral?" Pick a child profile, or add one. */
+/** "Sino ang mag-aaral?" Pick a child profile, or add one. Dark, like the other account screens. */
 export default function ChildPicker({ kids, onSelect, onCreate, onSignOut }: Props) {
-  const insets = useSafeAreaInsets();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -50,101 +48,76 @@ export default function ChildPicker({ kids, onSelect, onCreate, onSignOut }: Pro
   };
 
   return (
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView
-        contentContainerStyle={[styles.container, { paddingTop: insets.top + 24 }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.hero}>
-          <Mascot size={110} />
-          <Text style={styles.title}>Sino ang mag-aaral?</Text>
-        </View>
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <DarkPage>
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View style={styles.hero}>
+            <HelloCapi size={170} />
+            <Text style={darkStyles.title}>Sino ang mag-aaral?</Text>
+          </View>
 
-        {kids.map((kid) => (
-          <Pressable
-            key={kid.id}
-            style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-            onPress={() => onSelect(kid)}
-            accessibilityRole="button"
-            accessibilityLabel={kid.display_name}
-          >
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{kid.display_name.slice(0, 1).toUpperCase()}</Text>
-            </View>
-            <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>{kid.display_name}</Text>
-              <Text style={styles.cardMeta}>
-                ⭐ {kid.xp} XP · 🔥 {kid.streak_days}
-              </Text>
-            </View>
-          </Pressable>
-        ))}
+          {kids.map((kid) => (
+            <Pressable
+              key={kid.id}
+              style={({ pressed }) => [styles.card, pressed && { marginTop: 3, borderBottomWidth: 2 }]}
+              onPress={() => onSelect(kid)}
+              accessibilityRole="button"
+              accessibilityLabel={kid.display_name}
+            >
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{kid.display_name.slice(0, 1).toUpperCase()}</Text>
+              </View>
+              <View style={styles.cardText}>
+                <Text style={styles.cardTitle} numberOfLines={1}>
+                  {kid.display_name}
+                </Text>
+                <Text style={styles.cardMeta}>
+                  {kid.xp} XP · {kid.streak_days} araw
+                </Text>
+              </View>
+            </Pressable>
+          ))}
 
-        <View style={styles.form}>
-          <Text style={styles.formTitle}>Magdagdag ng mag-aaral</Text>
+          <Text style={darkStyles.label}>MAGDAGDAG NG MAG-AARAL</Text>
           <TextInput
-            style={styles.input}
+            style={styles.field}
             placeholder="Palayaw (hindi buong pangalan)"
-            placeholderTextColor={colors.muted}
+            placeholderTextColor={dark.muted}
             value={name}
             onChangeText={setName}
             maxLength={40}
           />
           <Text style={styles.hint}>Gumamit ng palayaw para sa privacy ng bata.</Text>
           {message ? <Text style={styles.message}>{message}</Text> : null}
-          {busy ? <ActivityIndicator color={colors.primary} /> : <Button3D label="Idagdag" onPress={add} />}
-        </View>
-
-        <Button3D label="Sign out" tone="neutral" small onPress={onSignOut} style={styles.signOut} />
-      </ScrollView>
+          {busy ? <ActivityIndicator color={dark.green} style={{ height: 60 }} /> : <Button3D label="Idagdag" disabled={name.trim().length === 0} onPress={add} />}
+          <TextLink label="Mag-log out" color={dark.coral} onPress={onSignOut} />
+        </ScrollView>
+      </DarkPage>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  container: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
-  hero: { alignItems: "center", gap: 8, marginBottom: 8 },
-  title: { color: colors.text, fontFamily: font.display, fontSize: 32, textAlign: "center" },
+  flex: { flex: 1, backgroundColor: dark.bg },
+  scroll: { gap: 12, paddingBottom: 20 },
+  hero: { alignItems: "center", gap: 6, marginBottom: 6 },
   card: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    backgroundColor: colors.white,
-    borderRadius: radius.md,
+    padding: 12,
+    backgroundColor: dark.field,
     borderWidth: 2,
     borderBottomWidth: 5,
-    borderColor: colors.border,
-    padding: 14,
+    borderColor: dark.line,
+    borderRadius: 18,
   },
-  cardPressed: { borderBottomWidth: 2, marginTop: 3 },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.info,
-    alignItems: "center",
-    justifyContent: "center",
-    borderBottomWidth: 3,
-    borderBottomColor: colors.infoDark,
-  },
-  avatarText: { fontSize: 26, fontFamily: font.display, color: colors.ink },
-  cardText: { gap: 2, flexShrink: 1 },
-  cardTitle: { color: colors.text, fontFamily: font.display, fontSize: 24 },
-  cardMeta: { color: colors.muted, fontFamily: font.body, fontSize: 14 },
-  form: { gap: 10, marginTop: 12 },
-  formTitle: { color: colors.text, fontFamily: font.bold, fontSize: 18 },
-  input: {
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: 14,
-    fontSize: 18,
-    fontFamily: font.body,
-    color: colors.text,
-    backgroundColor: colors.white,
-  },
-  hint: { color: colors.muted, fontFamily: font.body, fontSize: 13 },
-  message: { color: colors.dangerDark, fontFamily: font.bold, fontSize: 15 },
-  signOut: { marginTop: 12 },
+  avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: dark.blue, alignItems: "center", justifyContent: "center" },
+  avatarText: { fontFamily: font.display, fontSize: 26, lineHeight: 36, color: "#12303F", includeFontPadding: false },
+  cardText: { flexShrink: 1 },
+  cardTitle: { fontFamily: font.display, fontSize: 24, lineHeight: 34, color: dark.text, includeFontPadding: false },
+  cardMeta: { fontFamily: font.body, fontSize: 14, color: dark.muted },
+  field: { height: 56, paddingHorizontal: 16, borderRadius: 16, backgroundColor: dark.field, color: dark.text, fontFamily: font.body, fontSize: 18 },
+  hint: { fontFamily: font.body, fontSize: 13, color: dark.muted },
+  message: { fontFamily: font.bold, fontSize: 15, color: dark.coral },
 });

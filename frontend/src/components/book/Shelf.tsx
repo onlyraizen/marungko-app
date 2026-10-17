@@ -7,7 +7,7 @@ import type { BookView } from "./books";
 
 type Props = { books: readonly BookView[]; onOpen: (book: BookView) => void };
 
-/** The home screen: three books on a shelf. A book opens once the one before it is finished. */
+/** The home screen: the shelf of books. A book opens once the one before it is finished. */
 export default function Shelf({ books, onOpen }: Props) {
   const [shake, setShake] = useState<{ id: string; n: number }>({ id: "", n: 0 });
   const [hint, setHint] = useState<string | null>(null);
@@ -20,16 +20,25 @@ export default function Shelf({ books, onOpen }: Props) {
     [],
   );
 
+  const say = (message: string) => {
+    setHint(message);
+    if (timer.current !== null) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setHint(null), 2600);
+  };
+
   const press = (book: BookView, index: number) => {
+    if (book.status === "soon") {
+      setShake((current) => ({ id: book.id, n: current.n + 1 }));
+      say(`Malapit na ang ${book.title}: ${book.subtitle}!`);
+      return;
+    }
     if (book.status !== "locked") {
       onOpen(book);
       return;
     }
     setShake((current) => ({ id: book.id, n: current.n + 1 }));
-    const before = books[index - 1];
-    setHint(`Tapusin muna ang ${before?.title ?? "nakaraang libro"}.`);
-    if (timer.current !== null) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setHint(null), 2600);
+    const before = [...books.slice(0, index)].reverse().find((b) => b.status !== "soon");
+    say(`Tapusin muna ang ${before?.title ?? "nakaraang libro"}.`);
   };
 
   return (
@@ -57,8 +66,8 @@ export default function Shelf({ books, onOpen }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 48 },
-  heading: { fontFamily: font.display, fontSize: 30, color: colors.ink },
-  hint: { position: "absolute", left: 20, right: 20, bottom: 28, backgroundColor: "rgba(58,34,16,0.94)", borderRadius: 14, padding: 14 },
+  content: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 32 },
+  heading: { fontFamily: font.display, fontSize: 30, lineHeight: 44, color: colors.ink, marginLeft: 4, includeFontPadding: false },
+  hint: { position: "absolute", left: 20, right: 20, bottom: 16, backgroundColor: "rgba(58,34,16,0.94)", borderRadius: 14, padding: 14 },
   hintText: { fontFamily: font.bold, fontSize: 15, color: "#FFFFFF", textAlign: "center" },
 });
