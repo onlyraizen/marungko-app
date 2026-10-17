@@ -1,4 +1,21 @@
 {
   "review": "draft",
-  "phrases": ["Tama!", "Magaling!", "Husay!", "Subukan ulit.", "Halos na!", "Pakinggan mo.", "Basahin mo.", "Sabihin mo.", "Handa ka na ba?", "Magaling, tapos na ang aralin!"]
+  "phrases": [
+    "Tama!",
+    "Magaling!",
+    "Husay!",
+    "Subukan ulit.",
+    "Halos na!",
+    "Pakinggan mo.",
+    "Basahin mo.",
+    "Sabihin mo.",
+    "Handa ka na ba?",
+    "Magaling, tapos na ang aralin!",
+    "Ang galing mo!",
+    "Binabati kita! Tama lahat ng sagot mo!",
+    "Magaling! Halos tama lahat ng sagot mo!",
+    "Magaling! May ilang mali pero okay lang. Natututo tayo sa pagkakamali.",
+    "Magaling ang pagsisikap mo! Subukan natin ulit.",
+    "Nakakuha ka ng XP!"
+  ]
 }

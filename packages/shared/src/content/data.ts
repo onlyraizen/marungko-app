@@ -343,5 +343,265 @@ export const PHRASES: readonly string[] = [
   "Basahin mo.",
   "Sabihin mo.",
   "Handa ka na ba?",
-  "Magaling, tapos na ang aralin!"
+  "Magaling, tapos na ang aralin!",
+  "Ang galing mo!",
+  "Binabati kita! Tama lahat ng sagot mo!",
+  "Magaling! Halos tama lahat ng sagot mo!",
+  "Magaling! May ilang mali pero okay lang. Natututo tayo sa pagkakamali.",
+  "Magaling ang pagsisikap mo! Subukan natin ulit.",
+  "Nakakuha ka ng XP!"
 ];
+
+/** A short educational note for each word, keyed by its audio key. Draft until a teacher reviews it. */
+export const FACTS: Readonly<Record<string, string>> = {
+  "ama": "Ang ama ay isa pang tawag sa tatay.",
+  "asa": "Ang asa ay pag-asa. Umaasa tayo na may magandang mangyayari.",
+  "isa": "Ang isa ay ang unang bilang. Isa ang ilong mo at isa ang bibig mo.",
+  "mama": "Ang 'mama' ay tawag sa nanay sa ilang pamilya. Tawag din ito sa lalaking nakatatanda, gaya ng 'Mama, saan po ang simbahan?'",
+  "masa": "Ang masa ay malambot na halo ng harina at tubig. Ito ang ginagawang tinapay.",
+  "misa": "Ang misa ay pagtitipon ng mga Katoliko sa simbahan para magdasal at umawit.",
+  "sama": "Ang 'sama' ay nangangahulugang kasabay o kasama. Sumama ka sa kaibigan mo sa paglalaro.",
+  "mais": "Ang mais ay dilaw na butil na maaaring pakuluan o ihawin.",
+  "aso": "Ang aso ay tapat na kaibigan ng tao. Binabantayan niya ang bahay.",
+  "baso": "Ang baso ay lalagyan ng tubig o juice na iniinom natin.",
+  "mesa": "Ang mesa ay patag na kasangkapan. Dito tayo kumakain at nagsusulat.",
+  "ubas": "Ang ubas ay maliliit na bilog na prutas na tumutubo nang magkakumpol.",
+  "ube": "Ang ube ay lilang halamang-ugat na ginagawang matamis na panghimagas.",
+  "abo": "Ang abo ay pinong pulbos na natitira pagkatapos masunog ang kahoy o papel.",
+  "sabi": "Ang sabi ay ang sinasabi natin gamit ang bibig. Sabi ni nanay, kumain na tayo.",
+  "mata": "Ang mata ang ginagamit natin sa pagtingin. Dalawa ang mata mo.",
+  "bata": "Ang bata ay maliit pang tao na mahilig maglaro at matuto.",
+  "kama": "Ang kama ay higaan natin. Dito tayo natutulog sa gabi.",
+  "lima": "Lima ang daliri sa isang kamay mo.",
+  "mali": "Ang mali ay hindi tama. Walang masama sa pagkakamali, natututo tayo rito.",
+  "bola": "Ang bola ay bilog na laruan na gumugulong at tumatalbog.",
+  "tasa": "Ang tasa ay maliit na lalagyan ng mainit na inumin, gaya ng tsokolate.",
+  "yaya": "Ang yaya ay nag-aalaga sa mga bata habang abala ang magulang.",
+  "yelo": "Ang yelo ay tubig na naging matigas dahil sa lamig.",
+  "ina": "Ang ina ay isa pang tawag sa nanay.",
+  "ibon": "Ang ibon ay may pakpak at balahibo, kaya nakakalipad ang karamihan sa kanila.",
+  "pusa": "Ang pusa ay may balbas na tumutulong sa kanya na damhin ang paligid.",
+  "pato": "Ang pato ay mahilig lumangoy. May balat sa pagitan ng mga daliri ng paa niya, parang sagwan.",
+  "puso": "Ang puso ay tumitibok para dalhin ang dugo sa buong katawan mo.",
+  "dila": "Ang dila ang tumutulong sa atin na makatikim ng lasa, gaya ng matamis at maasim.",
+  "araw": "Ang araw ay isang malaking bituin. Binibigyan niya tayo ng liwanag at init.",
+  "ilaw": "Ang ilaw ay nagbibigay ng liwanag sa dilim.",
+  "bahay": "Ang bahay ay tirahan ng pamilya. Ang bahay kubo ay lumang bahay sa Pilipinas na gawa sa kawayan at pawid.",
+  "gatas": "Ang gatas ay masustansyang inumin na nakatutulong sa paglakas ng buto.",
+  "dalawa": "Ang dalawa ay isa at isa. Dalawa ang mata, tenga, kamay at paa mo.",
+  "tatlo": "Tatlo ang kulay ng ilaw trapiko: pula, dilaw at berde.",
+  "apat": "Apat ang paa ng aso at ng pusa.",
+  "anim": "Anim ang paa ng langgam.",
+  "pito": "Pito ang araw sa isang linggo.",
+  "walo": "Walo ang paa ng gagamba.",
+  "siyam": "Ang siyam ay isa na lang bago ang sampu.",
+  "sampu": "Sampu ang daliri mo sa dalawang kamay.",
+  "isda": "Humihinga ang isda sa ilalim ng tubig gamit ang hasang.",
+  "baka": "Ang baka ay nagbibigay ng gatas na iniinom natin.",
+  "kabayo": "Ang kabayo ay mabilis tumakbo. Noon, sinasakyan ito ng tao sa paglalakbay.",
+  "manok": "Ang inahing manok ay nangingitlog, at napipisa ang sisiw mula sa itlog.",
+  "nanay": "Ang nanay ay nag-aalaga at nagmamahal sa kanyang mga anak.",
+  "tatay": "Ang tatay ay nagtatrabaho at nag-aalaga rin sa pamilya.",
+  "ate": "Ang ate ay mas matandang kapatid na babae.",
+  "kuya": "Ang kuya ay mas matandang kapatid na lalaki.",
+  "lola": "Ang lola ay nanay ng iyong nanay o tatay.",
+  "lolo": "Ang lolo ay tatay ng iyong nanay o tatay.",
+  "ilong": "Ang ilong ang ginagamit natin sa pag-amoy at paghinga.",
+  "bibig": "Ang bibig ay ginagamit natin sa pagkain at pagsasalita.",
+  "tenga": "Ang tenga ang ginagamit natin sa pakikinig.",
+  "kamay": "Ang kamay ay may limang daliri. Ginagamit natin ito sa pagsusulat at paghawak.",
+  "paa": "Ang paa ang tumutulong sa atin na maglakad, tumakbo at tumalon.",
+  "saging": "Maraming uri ng saging sa Pilipinas, gaya ng lakatan at saba.",
+  "mansanas": "Maraming mansanas ang may pulang balat at matamis na laman. May berde rin.",
+  "mangga": "Ang mangga ay matamis kapag hinog. Kilala ang mangga ng Pilipinas sa ibang bansa.",
+  "tubig": "Kailangan ng ating katawan ang tubig. Uminom ng tubig araw-araw.",
+  "kanin": "Ang kanin ay niluto mula sa bigas. Pangunahing pagkain ito sa Pilipinas.",
+  "tinapay": "Ang tinapay ay gawa sa harina. Ang pandesal ay paboritong tinapay tuwing almusal.",
+  "pula": "Pula ang kulay ng kamatis at ng hinog na mansanas.",
+  "asul": "Asul ang kulay ng malinaw na langit at ng dagat.",
+  "dilaw": "Dilaw ang kulay ng mirasol at ng hinog na saging.",
+  "berde": "Berde ang kulay ng karamihan sa mga dahon.",
+  "puti": "Puti ang kulay ng gatas at ng ulap.",
+  "itim": "Itim ang kulay ng uling.",
+  "kahel": "Ang kahel ay kulay ng dalandan at ng karot.",
+  "buwan": "Ang buwan ay nakikita natin sa gabi. Umiikot ito sa mundo.",
+  "bituin": "Ang mga bituin ay mga malalayong araw. Kumikislap sila sa gabi.",
+  "puno": "Ang puno ay nagbibigay ng lilim at sariwang hangin.",
+  "dahon": "Ang dahon ang gumagawa ng pagkain ng halaman gamit ang liwanag ng araw.",
+  "bulaklak": "Ang bulaklak ay mabango at makulay. Ang sampaguita ang pambansang bulaklak ng Pilipinas.",
+  "salamat": "Sinasabi natin ang 'salamat' kapag may tumulong o nagbigay sa atin.",
+  "po": "Ang 'po' ay ginagamit para magpakita ng paggalang sa nakatatanda.",
+  "opo": "Ang 'opo' ay magalang na 'oo' na sinasabi natin sa nakatatanda.",
+  "magandang-umaga": "Sinasabi natin ang 'magandang umaga' bilang bati sa umaga.",
+  "libro": "Ang libro ay may mga pahina at kuwento. Mas marami kang natututuhan kapag nagbabasa ka.",
+  "lapis": "Ang lapis ay ginagamit natin sa pagsusulat at pagguhit.",
+  "papel": "Ang papel ay gawa sa mga hibla ng kahoy."
+};
+
+/** An example word and picture for each syllable. Draft until a teacher reviews it. */
+export const KEYWORDS: Readonly<Record<string, { word: string; emoji: string }>> = {
+  "ma": {
+    "word": "mata",
+    "emoji": "👁️"
+  },
+  "sa": {
+    "word": "saging",
+    "emoji": "🍌"
+  },
+  "mi": {
+    "word": "misa",
+    "emoji": "⛪"
+  },
+  "si": {
+    "word": "sisiw",
+    "emoji": "🐥"
+  },
+  "mo": {
+    "word": "motor",
+    "emoji": "🏍️"
+  },
+  "so": {
+    "word": "sopas",
+    "emoji": "🍲"
+  },
+  "ba": {
+    "word": "baso",
+    "emoji": "🥤"
+  },
+  "be": {
+    "word": "berde",
+    "emoji": "🟩"
+  },
+  "bi": {
+    "word": "bibig",
+    "emoji": "👄"
+  },
+  "bo": {
+    "word": "bola",
+    "emoji": "⚽"
+  },
+  "bu": {
+    "word": "buwan",
+    "emoji": "🌙"
+  },
+  "me": {
+    "word": "medyas",
+    "emoji": "🧦"
+  },
+  "se": {
+    "word": "sepilyo",
+    "emoji": "🪥"
+  },
+  "mu": {
+    "word": "mukha",
+    "emoji": "😀"
+  },
+  "su": {
+    "word": "suso",
+    "emoji": "🐌"
+  },
+  "ta": {
+    "word": "tatay",
+    "emoji": "👨"
+  },
+  "te": {
+    "word": "tenga",
+    "emoji": "👂"
+  },
+  "ti": {
+    "word": "tinapay",
+    "emoji": "🍞"
+  },
+  "to": {
+    "word": "totoy",
+    "emoji": "👦"
+  },
+  "tu": {
+    "word": "tubig",
+    "emoji": "💧"
+  },
+  "ka": {
+    "word": "kama",
+    "emoji": "🛏️"
+  },
+  "ke": {
+    "word": "keso",
+    "emoji": "🧀"
+  },
+  "ki": {
+    "word": "kimono",
+    "emoji": "👘"
+  },
+  "ko": {
+    "word": "kotse",
+    "emoji": "🚗"
+  },
+  "ku": {
+    "word": "kuwago",
+    "emoji": "🦉"
+  },
+  "la": {
+    "word": "lapis",
+    "emoji": "✏️"
+  },
+  "le": {
+    "word": "leon",
+    "emoji": "🦁"
+  },
+  "li": {
+    "word": "libro",
+    "emoji": "📖"
+  },
+  "lo": {
+    "word": "lolo",
+    "emoji": "👴"
+  },
+  "lu": {
+    "word": "luha",
+    "emoji": "😢"
+  },
+  "ya": {
+    "word": "yaya",
+    "emoji": "🍼"
+  },
+  "ye": {
+    "word": "yelo",
+    "emoji": "🧊"
+  },
+  "yo": {
+    "word": "yoyo",
+    "emoji": "🪀"
+  },
+  "yu": {
+    "word": "yungib",
+    "emoji": "⛰️"
+  },
+  "na": {
+    "word": "nanay",
+    "emoji": "👩"
+  },
+  "ga": {
+    "word": "gatas",
+    "emoji": "🥛"
+  },
+  "pa": {
+    "word": "pato",
+    "emoji": "🦆"
+  },
+  "ra": {
+    "word": "radyo",
+    "emoji": "📻"
+  },
+  "da": {
+    "word": "dahon",
+    "emoji": "🍃"
+  },
+  "ha": {
+    "word": "hayop",
+    "emoji": "🐾"
+  },
+  "wa": {
+    "word": "walo",
+    "emoji": "8️⃣"
+  }
+};

@@ -1,6 +1,6 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { UnitSchema, type Unit } from "../packages/shared/dist/index.js";
+import { UnitSchema, audioKey, type Unit } from "../packages/shared/dist/index.js";
 
 const root = join(import.meta.dirname, "..");
 const unitsDir = join(root, "content", "units");
@@ -19,6 +19,37 @@ const units: Unit[] = readdirSync(unitsDir)
 const phrases = (JSON.parse(readFileSync(join(root, "content", "phrases.json"), "utf8")) as { phrases: string[] })
   .phrases;
 
+// Fun facts: one per word, keyed like the audio files ("magandang-umaga").
+const facts = (JSON.parse(readFileSync(join(root, "content", "facts.json"), "utf8")) as {
+  facts: Record<string, string>;
+}).facts;
+const wordKeys = new Set(units.flatMap((unit) => unit.words.map((word) => audioKey(word))));
+for (const [key, fact] of Object.entries(facts)) {
+  if (!wordKeys.has(key)) throw new Error(`facts.json: "${key}" is not a word in the lesson content`);
+  if (fact.length > 180) console.warn(`WARNING fact "${key}" is long (${fact.length} characters)`);
+}
+const withoutFact = [...wordKeys].filter((key) => !(key in facts));
+if (withoutFact.length > 0) {
+  console.warn(`WARNING ${withoutFact.length} word(s) have no fun fact: ${withoutFact.join(", ")}`);
+}
+
+// Example words for the syllables ("SA para sa SAGING"). Each must start with its syllable.
+const keywords = (JSON.parse(readFileSync(join(root, "content", "keywords.json"), "utf8")) as {
+  syllables: Record<string, { word: string; emoji: string }>;
+}).syllables;
+const syllableSet = new Set(units.flatMap((unit) => unit.syllables));
+for (const [syllable, entry] of Object.entries(keywords)) {
+  if (!syllableSet.has(syllable)) throw new Error(`keywords.json: "${syllable}" is not a syllable in the lesson content`);
+  if (!entry.word.toLowerCase().startsWith(syllable)) {
+    throw new Error(`keywords.json: "${entry.word}" does not start with "${syllable}"`);
+  }
+  if (entry.emoji.trim() === "") throw new Error(`keywords.json: "${syllable}" has no emoji`);
+}
+const withoutKeyword = [...syllableSet].filter((syllable) => !(syllable in keywords));
+if (withoutKeyword.length > 0) {
+  console.warn(`WARNING ${withoutKeyword.length} syllable(s) have no example word: ${withoutKeyword.join(", ")}`);
+}
+
 const outDir = join(root, "packages", "shared", "src", "content");
 mkdirSync(outDir, { recursive: true });
 writeFileSync(
@@ -27,6 +58,13 @@ writeFileSync(
     `// After changing a file in /content, run: pnpm content:build\n` +
     `import type { Unit } from "../schemas/curriculum.js";\n\n` +
     `export const UNITS: readonly Unit[] = ${JSON.stringify(units, null, 2)};\n\n` +
-    `export const PHRASES: readonly string[] = ${JSON.stringify(phrases, null, 2)};\n`,
+    `export const PHRASES: readonly string[] = ${JSON.stringify(phrases, null, 2)};\n\n` +
+    `/** A short educational note for each word, keyed by its audio key. Draft until a teacher reviews it. */\n` +
+    `export const FACTS: Readonly<Record<string, string>> = ${JSON.stringify(facts, null, 2)};\n\n` +
+    `/** An example word and picture for each syllable. Draft until a teacher reviews it. */\n` +
+    `export const KEYWORDS: Readonly<Record<string, { word: string; emoji: string }>> = ${JSON.stringify(keywords, null, 2)};\n`,
 );
-console.log(`wrote packages/shared/src/content/data.ts (${units.length} units, ${phrases.length} phrases)`);
+console.log(
+  `wrote packages/shared/src/content/data.ts (${units.length} units, ${phrases.length} phrases, ` +
+    `${Object.keys(facts).length} facts, ${Object.keys(keywords).length} example words)`,
+);

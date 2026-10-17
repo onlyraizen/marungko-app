@@ -6,6 +6,16 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const STT_URL = "wss://stt-rt.soniox.com/transcribe-websocket";
 const STT_MODEL = "stt-rt-v5";
 
+// Hands-free stopping. Soniox sends an "<end>" token when it decides the speaker is done.
+// If it ends too early (cuts the child off), lower the level to 0 or raise the delay.
+// If it feels slow, raise the level (max 3) or lower the delay (min 500).
+const ENDPOINT_LATENCY_LEVEL = 2; // 0 default, 1 to 3 faster
+const MAX_ENDPOINT_DELAY_MS = 1000; // 500 to 3000; Soniox default is 2000
+const ENDPOINT_SENSITIVITY = 0.3; // -1 to 1; higher means it ends sooner
+// Safety nets, because "<end>" never comes if the child says nothing.
+const NO_SPEECH_MS = 7000;
+const MAX_LISTEN_MS = 12000;
+
 // Backend speech keys are valid for 60 s and single-use; reuse a prepared one only while it is fresh.
 const KEY_MAX_AGE_MS = 40_000;
 // Audio held while the connection opens: 10 s of 16 kHz 16-bit mono. Far more than needed.
@@ -41,15 +51,16 @@ async function fetchSpeechKey(): Promise<string> {
 }
 
 /**
- * Live microphone -> Soniox WebSocket -> text.
+ * Live microphone -> Soniox WebSocket -> text, hands-free.
  *
- * Call prepare() while the child is looking at the word: it asks for microphone
- * permission once and fetches the speech key ahead of time. start() then switches the
- * phone to record mode, opens the microphone immediately and queues audio while the
- * connection opens, so the child can talk straight away.
+ * The child taps once. Soniox detects when they stop speaking (the "<end>" token) and the
+ * result is ready by itself. If nothing is said, it gives up after NO_SPEECH_MS.
  *
- * `finished` turns true once the server has sent the final text after stop().
- * `confidence` is the mean confidence (0 to 1) of the confirmed words, or null.
+ * Call prepare() while the child is looking at the word: it asks for microphone permission
+ * once and fetches the speech key ahead of time, so start() is quick.
+ *
+ * `finished` turns true when the final text is ready. `heardSpeech` turns true as soon as
+ * any words have been recognised. `confidence` is the mean confidence (0 to 1), or null.
  */
 export function useLiveTranscription() {
   const [status, setStatus] = useState("Idle");
@@ -59,6 +70,7 @@ export function useLiveTranscription() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [heardSpeech, setHeardSpeech] = useState(false);
 
   const socketRef = useRef<WebSocket | null>(null);
   const socketOpenRef = useRef(false);
@@ -69,8 +81,11 @@ export function useLiveTranscription() {
   const confSumRef = useRef(0);
   const confCountRef = useRef(0);
   const stoppedRef = useRef(false);
+  const speechRef = useRef(false);
   const permissionRef = useRef(false);
   const preparedKeyRef = useRef<{ apiKey: string; at: number } | null>(null);
+  const noSpeechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { isStreaming, stream } = useAudioStream({
     channels: 1,
@@ -89,6 +104,13 @@ export function useLiveTranscription() {
     },
   });
 
+  const clearTimers = () => {
+    if (noSpeechTimerRef.current !== null) clearTimeout(noSpeechTimerRef.current);
+    if (maxTimerRef.current !== null) clearTimeout(maxTimerRef.current);
+    noSpeechTimerRef.current = null;
+    maxTimerRef.current = null;
+  };
+
   const stopAudio = useCallback(() => {
     try {
       stream.stop();
@@ -99,6 +121,7 @@ export function useLiveTranscription() {
 
   useEffect(() => {
     return () => {
+      clearTimers();
       stopAudio();
       socketRef.current?.close();
     };
@@ -139,6 +162,34 @@ export function useLiveTranscription() {
     setTimeout(() => socket.close(), 5000);
   };
 
+  /** The speaker finished (Soniox sent "<end>"): everything before it is final, so we are done. */
+  const finishAfterEndpoint = () => {
+    stoppedRef.current = true;
+    clearTimers();
+    stopAudio();
+    setStatus("Finished");
+    setFinished(true);
+    const socket = socketRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      try {
+        socket.send("");
+      } catch {
+        // Closing anyway.
+      }
+      setTimeout(() => socket.close(), 800);
+    }
+  };
+
+  const armTimers = () => {
+    clearTimers();
+    noSpeechTimerRef.current = setTimeout(() => {
+      if (!speechRef.current && !stoppedRef.current) stop();
+    }, NO_SPEECH_MS);
+    maxTimerRef.current = setTimeout(() => {
+      if (!stoppedRef.current) stop();
+    }, MAX_LISTEN_MS);
+  };
+
   const handleMessage = (event: { data?: unknown }) => {
     let message: SonioxMessage;
     try {
@@ -148,6 +199,7 @@ export function useLiveTranscription() {
     }
 
     if (message.error_code) {
+      clearTimers();
       setError(
         `${message.error_code} ${message.error_type ?? ""}: ${message.error_message ?? ""}`.trim(),
       );
@@ -158,8 +210,22 @@ export function useLiveTranscription() {
     }
 
     let partial = "";
+    let sawEndpoint = false;
     for (const token of message.tokens ?? []) {
       if (!token.text) continue;
+      if (token.text === "<end>") {
+        sawEndpoint = true;
+        continue;
+      }
+      if (token.text === "<fin>") continue;
+      if (!speechRef.current && token.text.trim() !== "") {
+        speechRef.current = true;
+        setHeardSpeech(true);
+        if (noSpeechTimerRef.current !== null) {
+          clearTimeout(noSpeechTimerRef.current);
+          noSpeechTimerRef.current = null;
+        }
+      }
       if (token.is_final) {
         finalRef.current += token.text;
         if (typeof token.confidence === "number" && token.text.trim() !== "") {
@@ -174,7 +240,13 @@ export function useLiveTranscription() {
     setPartialText(partial);
     setConfidence(confCountRef.current > 0 ? confSumRef.current / confCountRef.current : null);
 
+    if (sawEndpoint && !stoppedRef.current) {
+      finishAfterEndpoint();
+      return;
+    }
+
     if (message.finished) {
+      clearTimers();
       setStatus("Finished");
       setFinished(true);
       socketRef.current?.close();
@@ -188,13 +260,16 @@ export function useLiveTranscription() {
     setPartialText("");
     setConfidence(null);
     setFinished(false);
+    setHeardSpeech(false);
     finalRef.current = "";
     confSumRef.current = 0;
     confCountRef.current = 0;
     stoppedRef.current = false;
+    speechRef.current = false;
     queueRef.current = [];
     queuedBytesRef.current = 0;
     connectingRef.current = true;
+    clearTimers();
     setBusy(true);
 
     try {
@@ -211,6 +286,7 @@ export function useLiveTranscription() {
         throw new Error(`Mic delivered ${stream.sampleRate} Hz, ${stream.channels} ch; expected 16000 Hz mono.`);
       }
       setStatus("Listening...");
+      armTimers();
 
       const apiKey = await keyPromise;
       await new Promise<void>((resolve, reject) => {
@@ -225,6 +301,10 @@ export function useLiveTranscription() {
               num_channels: 1,
               language_hints: ["tl"],
               context: { terms },
+              enable_endpoint_detection: true,
+              endpoint_latency_adjustment_level: ENDPOINT_LATENCY_LEVEL,
+              endpoint_sensitivity: ENDPOINT_SENSITIVITY,
+              max_endpoint_delay_ms: MAX_ENDPOINT_DELAY_MS,
             }),
           );
           // Send everything captured while connecting, in order, then go live.
@@ -233,7 +313,7 @@ export function useLiveTranscription() {
           queuedBytesRef.current = 0;
           socketOpenRef.current = true;
           connectingRef.current = false;
-          // The child may have tapped "done" before the connection finished opening.
+          // The child (or a timer) may have stopped before the connection finished opening.
           if (stoppedRef.current) endStream(socket);
           resolve();
         };
@@ -247,6 +327,7 @@ export function useLiveTranscription() {
       });
     } catch (caught) {
       connectingRef.current = false;
+      clearTimers();
       setError(caught instanceof Error ? caught.message : String(caught));
       setStatus("Idle");
       stopAudio();
@@ -256,8 +337,10 @@ export function useLiveTranscription() {
     }
   };
 
+  /** Manual stop (the small "Ihinto" button) and the timers' way to give up. */
   const stop = () => {
     stoppedRef.current = true;
+    clearTimers();
     stopAudio();
     const socket = socketRef.current;
     if (socket && socketOpenRef.current && socket.readyState === WebSocket.OPEN) {
@@ -276,6 +359,7 @@ export function useLiveTranscription() {
     error,
     busy,
     finished,
+    heardSpeech,
     isListening: isStreaming,
     prepare,
     start,

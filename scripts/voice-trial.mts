@@ -7,11 +7,16 @@ import { UnitSchema, audioKey } from "../packages/shared/dist/index.js";
  * Listening trial: five ways of asking Soniox to say each item. Writes to a folder outside
  * the project, plus a page (index.html) for choosing the best version of each item.
  *
- *   pnpm voice:trial                              six test words
- *   pnpm voice:trial -- --words aso,ibon          your own words
- *   pnpm voice:trial -- --all                     dry run: every word and phrase, spends nothing
- *   pnpm voice:trial -- --all --yes               generate them all
+ *   pnpm voice:trial                                  six test words, calm styles
+ *   pnpm voice:trial -- --jolly --words 'mama,Tama!'  your own items, cheerful styles
+ *   pnpm voice:trial -- --all                         dry run: everything in the content, spends nothing
+ *   pnpm voice:trial -- --all --yes                   generate it all
+ *   pnpm voice:trial -- --all --new-only --yes        only items that have no audio in the app yet
+ *   pnpm voice:trial -- --all --jolly --only phrases,keywords --yes
  *   add --voice <Name> to try another voice, --force to regenerate existing files
+ *
+ * --only takes any of: words, syllables, phrases, keywords
+ * (default: words, phrases, keywords; with --syllables: all four).
  */
 
 const root = join(import.meta.dirname, "..");
@@ -28,36 +33,74 @@ const option = (name: string): string | undefined => {
 
 const voice = option("voice") ?? "Maya";
 const all = flag("all");
-const outDir = option("out-dir") ?? join(homedir(), all ? "voice-trial-all" : "voice-trial");
+const jolly = flag("jolly");
+const outDir =
+  option("out-dir") ?? join(homedir(), all ? (jolly ? "voice-trial-jolly" : "voice-trial-all") : "voice-trial");
 const choicesPath = join(root, "content", "audio-choices.txt");
+const appAudioDir = join(root, "frontend", "assets", "audio", "words");
+
+const groups = new Set(
+  (option("only") ?? (flag("syllables") ? "words,syllables,phrases,keywords" : "words,phrases,keywords"))
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean),
+);
 
 const bare = (text: string): string => text.replace(/[.!?]+$/, "");
 const finished = (text: string): string => (/[.!?]$/.test(text) ? text : `${text}.`);
+const cheer = (text: string): string => `${bare(text)}!`;
 
 type Variant = { name: string; make: (text: string) => string; speed?: number };
-const variants: Variant[] = [
+const calmVariants: Variant[] = [
   { name: "1-plain", make: bare },
   { name: "2-period", make: finished },
   { name: "3-slow", make: (text) => `[slowly] ${finished(text)}` },
   { name: "4-calm-slow", make: (text) => `[calm] [slowly] ${finished(text)}` },
   { name: "5-speed85", make: finished, speed: 0.85 },
 ];
+// Cheerful styles. Only tags from Soniox's documented list. Variant 2 is the default pick.
+const jollyVariants: Variant[] = [
+  { name: "1-bright", make: cheer },
+  { name: "2-happy", make: (text) => `[happy] ${cheer(text)}` },
+  { name: "3-delighted", make: (text) => `[delighted] ${cheer(text)}` },
+  { name: "4-excited", make: (text) => `[excited] ${cheer(text)}` },
+  { name: "5-playful", make: (text) => `[playful] ${cheer(text)}` },
+];
+const variants = jolly ? jollyVariants : calmVariants;
 
 // What to say, in teaching order.
 const items = new Map<string, string>();
 if (all) {
-  const unitsDir = join(root, "content", "units");
-  for (const file of readdirSync(unitsDir).filter((name) => name.endsWith(".json")).sort()) {
-    const unit = UnitSchema.parse(JSON.parse(readFileSync(join(unitsDir, file), "utf8")));
-    for (const word of unit.words) items.set(audioKey(word), word);
-    if (flag("syllables")) for (const syllable of unit.syllables) items.set(audioKey(syllable), syllable);
+  if (groups.has("words") || groups.has("syllables")) {
+    const unitsDir = join(root, "content", "units");
+    for (const file of readdirSync(unitsDir).filter((name) => name.endsWith(".json")).sort()) {
+      const unit = UnitSchema.parse(JSON.parse(readFileSync(join(unitsDir, file), "utf8")));
+      if (groups.has("words")) for (const word of unit.words) items.set(audioKey(word), word);
+      if (groups.has("syllables")) for (const syllable of unit.syllables) items.set(audioKey(syllable), syllable);
+    }
   }
-  const phrases = (JSON.parse(readFileSync(join(root, "content", "phrases.json"), "utf8")) as { phrases: string[] })
-    .phrases;
-  for (const phrase of phrases) items.set(audioKey(phrase), phrase);
+  if (groups.has("phrases")) {
+    const phrases = (JSON.parse(readFileSync(join(root, "content", "phrases.json"), "utf8")) as { phrases: string[] })
+      .phrases;
+    for (const phrase of phrases) items.set(audioKey(phrase), phrase);
+  }
+  if (groups.has("keywords")) {
+    // Example words shown with the syllables ("SA para sa SAGING").
+    const keywords = (JSON.parse(readFileSync(join(root, "content", "keywords.json"), "utf8")) as {
+      syllables: Record<string, { word: string }>;
+    }).syllables;
+    for (const entry of Object.values(keywords)) items.set(audioKey(entry.word), entry.word);
+  }
 } else {
   const words = (option("words") ?? "mama,masa,mesa,sama,dalawa,tatlo").split(",").map((word) => word.trim());
   for (const word of words.filter(Boolean)) items.set(audioKey(word), word);
+}
+
+// Leave the audio you already chose and compiled alone.
+if (flag("new-only")) {
+  for (const key of [...items.keys()]) {
+    if (existsSync(join(appAudioDir, `${key}.wav`))) items.delete(key);
+  }
 }
 
 const fileFor = (key: string, variant: Variant): string => join(outDir, `${key}__${variant.name}.wav`);
@@ -71,11 +114,15 @@ const characters = todo.reduce((sum, job) => sum + job.variant.make(job.text).le
 // Upper estimate: input at $4 per 1M tokens (0.3 tokens per character), output at $21.5 per 1M
 // tokens (30,000 per hour of speech), counting about one second of speech per clip.
 const estimatedUsd = (characters * 0.3 * 4) / 1e6 + (todo.length * (30_000 / 3600) * 21.5) / 1e6;
-console.log(`Voice: ${voice}   Model: ${MODEL}   Language: ${LANGUAGE}`);
+console.log(`Voice: ${voice}   Model: ${MODEL}   Language: ${LANGUAGE}   Style: ${jolly ? "jolly" : "calm"}`);
 console.log(`Items: ${items.size}   clips to generate: ${todo.length}   estimated cost: about $${estimatedUsd.toFixed(3)} (upper estimate)`);
 
 if (all && !flag("yes")) {
   console.log("\nDry run: nothing was generated or spent. Add --yes to generate.");
+  process.exit(0);
+}
+if (items.size === 0) {
+  console.log("\nNothing to do: no items selected, or every item already has audio in the app.");
   process.exit(0);
 }
 
@@ -161,6 +208,7 @@ const sections = [...items]
   })
   .join("\n");
 
+const storageKey = `audio-choices-${jolly ? "jolly" : "calm"}-v1`;
 const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Choose the best audio</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
@@ -175,8 +223,8 @@ audio{width:200px;height:32px}
 textarea{width:100%;height:120px;font-family:monospace}
 button{font-size:16px;padding:8px 14px}
 </style></head><body>
-<h1>Choose the best version of each item (${keys.length} items, voice ${esc(voice)})</h1>
-<p>Play the five versions, then tick the one you like best. Your ticks are saved in this browser. When you are done, press the button and paste the result into content/audio-choices.txt.</p>
+<h1>Choose the best version of each item (${keys.length} items, voice ${esc(voice)}, ${jolly ? "jolly" : "calm"} styles)</h1>
+<p>Play the five versions, then tick the one you like best. Your ticks are saved in this browser. When you are done, press the button and add the result to content/audio-choices.txt.</p>
 ${sections}
 <div class="bar"><button id="copy">Copy my choices</button> <span id="note"></span>
 <textarea id="out" readonly></textarea></div>
@@ -196,11 +244,11 @@ function refresh() {
   try {
     var saved = {};
     keys.forEach(function (key) { saved[key] = picked(key); });
-    localStorage.setItem("audio-choices-v1", JSON.stringify(saved));
+    localStorage.setItem(${JSON.stringify(storageKey)}, JSON.stringify(saved));
   } catch (e) {}
 }
 try {
-  var stored = JSON.parse(localStorage.getItem("audio-choices-v1") || "{}");
+  var stored = JSON.parse(localStorage.getItem(${JSON.stringify(storageKey)}) || "{}");
   Object.keys(stored).forEach(function (key) {
     var el = document.querySelector('input[name="' + key + '"][value="' + stored[key] + '"]');
     if (el) el.checked = true;

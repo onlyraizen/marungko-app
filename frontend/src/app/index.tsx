@@ -1,25 +1,60 @@
-import { UNITS, unitItems, type Unit } from "@marungko/shared";
+import { UNITS, unitItems, type MatchResult, type Unit } from "@marungko/shared";
 import type { Session } from "@supabase/supabase-js";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Book from "../components/book/Book";
+import ChildPicker from "../components/ChildPicker";
 import LiveTranscript from "../components/LiveTranscript";
 import MicSpike from "../components/MicSpike";
+import ProfileMenu from "../components/ProfileMenu";
 import SignIn from "../components/SignIn";
-import UnitList from "../components/UnitList";
+import Button3D from "../components/ui/Button3D";
+import TopBar from "../components/ui/TopBar";
 import WordExercise from "../components/WordExercise";
+import {
+  completeUnit,
+  createChild,
+  getProgress,
+  listChildren,
+  recordAttempt,
+  type Child,
+  type CompleteResult,
+  type UnitProgress,
+} from "../services/progress";
 import { supabase } from "../services/supabase";
+import { useAppStore, useStoreHydrated } from "../store/useAppStore";
+import { colors } from "../theme/colors";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-type Screen = "home" | "mic" | "live" | "units" | "practice";
+type Screen = "path" | "menu" | "practice" | "live" | "mic";
 
-/** Phase 1 home: sign in, prove the backend accepts our token, open lessons and the voice spikes. */
+/** Sign in, choose the child, then the storybook with saved progress. */
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
-  const [screen, setScreen] = useState<Screen>("home");
+  const hydrated = useStoreHydrated();
+  const activeChildId = useAppStore((state) => state.activeChildId);
+  const setActiveChildId = useAppStore((state) => state.setActiveChildId);
+  const unlockAll = useAppStore((state) => state.unlockAll);
+  const setUnlockAll = useAppStore((state) => state.setUnlockAll);
+
+  const [kids, setKids] = useState<Child[] | null>(null);
+  const [progress, setProgress] = useState<ReadonlyMap<string, UnitProgress>>(new Map());
+  // Which child the loaded progress belongs to, so the book never shows another child's pages.
+  const [progressFor, setProgressFor] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [screen, setScreen] = useState<Screen>("path");
   const [unit, setUnit] = useState<Unit | null>(null);
   const [check, setCheck] = useState<string | null>(null);
+
+  const userId = session?.user.id;
+  const activeChild = useMemo(
+    () => kids?.find((kid) => kid.id === activeChildId) ?? null,
+    [kids, activeChildId],
+  );
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -29,6 +64,68 @@ export default function HomeScreen() {
     const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
     return () => data.subscription.unsubscribe();
   }, []);
+
+  // Signed out: forget the child and the loaded data.
+  useEffect(() => {
+    if (ready && !userId) {
+      setKids(null);
+      setProgress(new Map());
+      setProgressFor(null);
+      setActiveChildId(null);
+      setScreen("path");
+    }
+  }, [ready, userId, setActiveChildId]);
+
+  const refresh = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const list = await listChildren();
+      const chosen = list.find((kid) => kid.id === useAppStore.getState().activeChildId);
+      const rows = chosen ? await getProgress(chosen.id) : [];
+      setKids(list);
+      setProgress(new Map(rows.map((row) => [row.unit_id, row])));
+      setProgressFor(chosen?.id ?? null);
+      setLoadError(null);
+    } catch (caught) {
+      setLoadError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh, activeChildId]);
+
+  const handleAttempt = useCallback(
+    (item: string, heard: string, kind: MatchResult["kind"]) => {
+      if (activeChild && unit) void recordAttempt({ childId: activeChild.id, unitId: unit.id, item, heard, kind });
+    },
+    [activeChild, unit],
+  );
+
+  const handleComplete = useCallback(
+    async (correct: number, total: number): Promise<CompleteResult> => {
+      if (!activeChild || !unit) throw new Error("No child or lesson selected.");
+      const result = await completeUnit(activeChild.id, unit.id, correct, total);
+      await refresh();
+      return result;
+    },
+    [activeChild, unit, refresh],
+  );
+
+  const handleCreateChild = useCallback(
+    async (name: string) => {
+      const child = await createChild(name);
+      setKids((current) => [...(current ?? []), child]);
+      setActiveChildId(child.id);
+    },
+    [setActiveChildId],
+  );
+
+  const signOut = useCallback(() => {
+    setActiveChildId(null);
+    setScreen("path");
+    void supabase.auth.signOut();
+  }, [setActiveChildId]);
 
   const checkBackend = async () => {
     if (!API_URL || !session) {
@@ -59,95 +156,123 @@ export default function HomeScreen() {
   };
 
   if (!ready) {
-    return <ActivityIndicator style={styles.loading} />;
+    return <ActivityIndicator style={styles.loading} color={colors.primary} />;
   }
 
   if (!session) {
     return <SignIn />;
   }
 
-  if (screen !== "home") {
-    const goBack = () => {
-      if (screen === "practice") setScreen("units");
-      else setScreen("home");
-    };
+  if (loadError && kids === null) {
+    return (
+      <View style={[styles.centered, { paddingTop: insets.top + 40 }]}>
+        <Text style={styles.errorTitle}>Hindi ma-load ang data</Text>
+        <Text style={styles.errorText}>{loadError}</Text>
+        <Button3D label="Subukan ulit" onPress={() => void refresh()} />
+        <Button3D label="Sign out" tone="neutral" onPress={signOut} />
+      </View>
+    );
+  }
+
+  if (!hydrated || kids === null) {
+    return <ActivityIndicator style={styles.loading} color={colors.primary} />;
+  }
+
+  if (!activeChild) {
+    return (
+      <ChildPicker
+        kids={kids}
+        onSelect={(child) => setActiveChildId(child.id)}
+        onCreate={handleCreateChild}
+        onSignOut={signOut}
+      />
+    );
+  }
+
+  if (screen === "menu") {
+    return (
+      <ProfileMenu
+        childName={activeChild.display_name}
+        email={session.user.email ?? ""}
+        unlockAll={unlockAll}
+        check={check}
+        onToggleUnlock={() => setUnlockAll(!unlockAll)}
+        onSwitchChild={() => {
+          setScreen("path");
+          setActiveChildId(null);
+        }}
+        onCheckBackend={() => void checkBackend()}
+        onOpenLive={() => setScreen("live")}
+        onOpenMic={() => setScreen("mic")}
+        onSignOut={signOut}
+        onClose={() => setScreen("path")}
+      />
+    );
+  }
+
+  if (screen === "practice" || screen === "live" || screen === "mic") {
     // Letter sounds have no recordings yet, so only syllables and words are spoken.
     const items = unit ? unitItems(unit).filter((item) => item.kind !== "sound").map((item) => item.text) : [];
-
     return (
-      <View style={styles.flex}>
-        <Pressable style={styles.back} onPress={goBack}>
+      // The lesson screens still have the light look until the lesson-screen batch restyles them.
+      <View style={[styles.legacy, { paddingTop: insets.top }]}>
+        <Pressable
+          style={styles.back}
+          onPress={() => setScreen(screen === "practice" ? "path" : "menu")}
+          accessibilityRole="button"
+        >
           <Text style={styles.backText}>Back</Text>
         </Pressable>
         {screen === "mic" ? <MicSpike /> : null}
         {screen === "live" ? <LiveTranscript /> : null}
-        {screen === "units" ? (
-          <UnitList
-            units={UNITS}
-            onSelect={(selected) => {
-              setUnit(selected);
-              setScreen("practice");
-            }}
-          />
-        ) : null}
         {screen === "practice" && unit ? (
-          <WordExercise key={unit.id} title={unit.title} items={items} onDone={() => setScreen("units")} />
+          <WordExercise
+            key={unit.id}
+            title={unit.title}
+            items={items}
+            onDone={() => setScreen("path")}
+            onAttempt={handleAttempt}
+            onComplete={handleComplete}
+          />
         ) : null}
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Signed in</Text>
-      <Text style={styles.line}>{session.user.email}</Text>
-
-      <Pressable style={styles.button} onPress={() => setScreen("units")}>
-        <Text style={styles.buttonText}>Mga Aralin</Text>
-      </Pressable>
-
-      <Pressable style={styles.button} onPress={checkBackend}>
-        <Text style={styles.buttonText}>Check backend login</Text>
-      </Pressable>
-      {check ? <Text style={styles.result}>{check}</Text> : null}
-
-      <Pressable style={styles.button} onPress={() => setScreen("live")}>
-        <Text style={styles.buttonText}>Live transcript</Text>
-      </Pressable>
-
-      <Pressable style={styles.button} onPress={() => setScreen("mic")}>
-        <Text style={styles.buttonText}>Open mic spike</Text>
-      </Pressable>
-
-      <Pressable style={styles.outline} onPress={() => supabase.auth.signOut()}>
-        <Text style={styles.outlineText}>Sign out</Text>
-      </Pressable>
-    </ScrollView>
+    <View style={styles.root}>
+      <TopBar
+        name={activeChild.display_name}
+        streak={activeChild.streak_days}
+        xp={activeChild.xp}
+        onPress={() => setScreen("menu")}
+      />
+      {progressFor === activeChild.id ? (
+        <Book
+          key={activeChild.id}
+          childId={activeChild.id}
+          units={UNITS}
+          progress={progress}
+          unlockAll={unlockAll}
+          onStart={(selected) => {
+            setUnit(selected);
+            setScreen("practice");
+          }}
+        />
+      ) : (
+        <ActivityIndicator style={styles.loading} color={colors.primary} />
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
+  root: { flex: 1, backgroundColor: colors.bg },
   loading: { marginTop: 120 },
-  container: { padding: 24, paddingTop: 64, gap: 14 },
-  title: { fontSize: 28, fontWeight: "700" },
-  line: { fontSize: 18 },
-  result: { fontSize: 15, color: "#333" },
-  back: { paddingHorizontal: 24, paddingTop: 16 },
+  centered: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24, gap: 14 },
+  errorTitle: { color: colors.text, fontSize: 26, fontWeight: "800" },
+  errorText: { color: colors.muted, fontSize: 15 },
+  legacy: { flex: 1, backgroundColor: "#FFFFFF" },
+  back: { paddingHorizontal: 24, paddingTop: 12 },
   backText: { color: "#1f6feb", fontSize: 18 },
-  button: {
-    backgroundColor: "#1f6feb",
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  buttonText: { color: "#fff", fontSize: 18, fontWeight: "600" },
-  outline: {
-    borderWidth: 1,
-    borderColor: "#999",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  outlineText: { fontSize: 16 },
 });

@@ -1,0 +1,20 @@
+/** Colours for the storybook scene (paper, pond, frogs). Original palette. */
+export const book = {
+  cover: "#6B3F1D",
+  coverDark: "#4E2D13",
+  paper: "#FFF8E7",
+  paperShade: "#F1E4C3",
+  paperLine: "#E7D9B6",
+  ink: "#3B2A18",
+  pond: "#7FCBE6",
+  pondDeep: "#5DB4D6",
+  pondLight: "#C6EDF9",
+  pad: "#3FA34D",
+  padDark: "#2D7A39",
+  frog: "#7BD65B",
+  frogDark: "#4FAE3A",
+  ribbon: "#E0524D",
+  ribbonDark: "#B03A36",
+  reed: "#4C9A4A",
+  cattail: "#8A5A2E",
+} as const;
