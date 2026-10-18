@@ -1,8 +1,10 @@
 import { Image } from "expo-image";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { colors } from "../../theme/colors";
 import { font } from "../../theme/fonts";
-import { ICONS } from "../art/assets";
+import { AVATARS, ICONS, type AvatarId } from "../art/assets";
+import AvatarPicker from "../ui/AvatarPicker";
 import Button3D from "../ui/Button3D";
 import { BoltIcon, FlameIcon, YuzuIcon } from "../ui/Icons";
 import ScreenHeader from "./ScreenHeader";
@@ -14,7 +16,8 @@ type Props = {
   xp: number;
   lessonsDone: number;
   onSwitchChild: () => void;
-  onSettings: () => void;
+  avatar: AvatarId;
+  onAvatar: (id: AvatarId) => void;
 };
 
 function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
@@ -29,18 +32,31 @@ function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; la
 }
 
 /** The child's profile: avatar, name, and a summary of how they are doing. */
-export default function ProfileScreen({ name, streak, yuzu, xp, lessonsDone, onSwitchChild, onSettings }: Props) {
+export default function ProfileScreen({ name, streak, yuzu, xp, lessonsDone, onSwitchChild, avatar, onAvatar }: Props) {
+  const [picking, setPicking] = useState(false);
   return (
     <View style={styles.root}>
-      <ScreenHeader title={name} onSettings={onSettings} />
+      <ScreenHeader title={name} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.card}>
           <View style={styles.who}>
-            <Image source={ICONS.profile} contentFit="contain" style={styles.avatar} />
+            <Pressable onPress={() => setPicking(!picking)} accessibilityRole="button" accessibilityLabel="Palitan ang avatar">
+              <Image source={AVATARS[avatar]} contentFit="contain" style={styles.avatar} />
+              <Text style={styles.change}>{picking ? "ISARA" : "PALITAN"}</Text>
+            </Pressable>
             <Text style={styles.name} numberOfLines={1}>
               {name}
             </Text>
           </View>
+          {picking ? (
+            <AvatarPicker
+              value={avatar}
+              onChange={(id) => {
+                onAvatar(id);
+                setPicking(false);
+              }}
+            />
+          ) : null}
           <Button3D label="Palitan ang mag-aaral" tone="info" small onPress={onSwitchChild} />
         </View>
 
@@ -68,7 +84,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 24,
   },
-  avatar: { width: 100, height: 100 },
+  avatar: { width: 96, height: 96 },
+  change: { fontFamily: font.bold, fontSize: 11, letterSpacing: 1.2, color: colors.infoInk, textAlign: "center", marginTop: 2 },
   who: { flexDirection: "row", alignItems: "center", gap: 16 },
   name: { flex: 1, fontFamily: font.display, fontSize: 28, lineHeight: 40, color: colors.ink, includeFontPadding: false },
   section: { fontFamily: font.bold, fontSize: 13, letterSpacing: 1.6, color: colors.muted, marginTop: 8, marginLeft: 4 },

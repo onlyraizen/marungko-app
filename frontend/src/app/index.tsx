@@ -12,16 +12,19 @@ import SettingsScreen from "../components/app/SettingsScreen";
 import TabBar, { type TabId } from "../components/app/TabBar";
 import AuthFlow from "../components/auth/AuthFlow";
 import { DarkPage, SigningIn, darkStyles } from "../components/auth/dark";
+import { Capi } from "../components/art/Capi";
+import type { AvatarId } from "../components/art/assets";
 import { buildBookViews } from "../components/book/books";
 import PondPath from "../components/book/PondPath";
 import Shelf from "../components/book/Shelf";
 import ChildPicker from "../components/ChildPicker";
-import LessonScreen from "../components/lesson/LessonScreen";
+import LessonScreen, { type LessonSummary } from "../components/lesson/LessonScreen";
 import LiveTranscript from "../components/LiveTranscript";
 import MicSpike from "../components/MicSpike";
 import Splash from "../components/Splash";
 import Button3D from "../components/ui/Button3D";
 import TopBar from "../components/ui/TopBar";
+import { earnedMedals, type AwardStats } from "../content/awards";
 import {
   completeUnit,
   createChild,
@@ -29,7 +32,6 @@ import {
   listChildren,
   recordAttempt,
   type Child,
-  type CompleteResult,
   type UnitProgress,
 } from "../services/progress";
 import { supabase } from "../services/supabase";
@@ -57,6 +59,10 @@ export default function HomeScreen() {
   const missedByChild = useAppStore((state) => state.missed);
   const addMissed = useAppStore((state) => state.addMissed);
   const clearMissed = useAppStore((state) => state.clearMissed);
+  const avatars = useAppStore((state) => state.avatars);
+  const setAvatar = useAppStore((state) => state.setAvatar);
+  const medalsByChild = useAppStore((state) => state.medals);
+  const addMedals = useAppStore((state) => state.addMedals);
 
   const [kids, setKids] = useState<Child[] | null>(null);
   const [progress, setProgress] = useState<ReadonlyMap<string, UnitProgress>>(new Map());
@@ -130,6 +136,31 @@ export default function HomeScreen() {
   }, [refresh, activeChildId]);
 
   const missed = (activeChild && missedByChild[activeChild.id]) || NO_WORDS;
+  const avatar = ((activeChild && avatars[activeChild.id]) ?? "capi") as AvatarId;
+
+  const books = useMemo(
+    () => buildBookViews(UNITS, (unitId) => progress.has(unitId), unlockAll),
+    [progress, unlockAll],
+  );
+
+  /** The numbers the medals are worked out from, as they stand now. */
+  const stats = useMemo<AwardStats>(
+    () => ({
+      lessons: progress.size,
+      perfect: [...progress.values()].some((row) => row.total > 0 && row.best_correct >= row.total),
+      streak: activeChild?.streak_days ?? 0,
+      xp: activeChild?.xp ?? 0,
+      booksDone: buildBookViews(UNITS, (unitId) => progress.has(unitId), false)
+        .filter((entry) => entry.status === "done")
+        .map((entry) => entry.number),
+    }),
+    [progress, activeChild],
+  );
+  const earnedNow = useMemo(() => {
+    const set = new Set<string>(earnedMedals(stats));
+    for (const id of (activeChild && medalsByChild[activeChild.id]) || NO_WORDS) set.add(id);
+    return set;
+  }, [stats, activeChild, medalsByChild]);
 
   /** A word the child read or tapped: right takes it off the review list, wrong puts it on. */
   const markWord = useCallback(
@@ -178,22 +209,38 @@ export default function HomeScreen() {
   );
 
   const handleComplete = useCallback(
-    async (correct: number, total: number): Promise<CompleteResult> => {
+    async (correct: number, total: number): Promise<LessonSummary> => {
       if (!activeChild || !unit) throw new Error("No child or lesson selected.");
       const result = await completeUnit(activeChild.id, unit.id, correct, total);
+      // Which medals did this lesson earn? Compare the numbers before and after.
+      const finished = new Set(progress.keys());
+      finished.add(unit.id);
+      const after = earnedMedals({
+        lessons: finished.size,
+        perfect: stats.perfect || (total > 0 && correct >= total),
+        streak: result.streak,
+        xp: result.xp,
+        booksDone: buildBookViews(UNITS, (unitId) => finished.has(unitId), false)
+          .filter((entry) => entry.status === "done")
+          .map((entry) => entry.number),
+      });
+      const held = new Set(earnedNow);
+      const fresh = [...after].filter((id) => !held.has(id));
+      addMedals(activeChild.id, [...after]);
       await refresh();
-      return result;
+      return { ...result, medals: fresh };
     },
-    [activeChild, unit, refresh],
+    [activeChild, unit, refresh, progress, stats, earnedNow, addMedals],
   );
 
   const handleCreateChild = useCallback(
-    async (name: string) => {
+    async (name: string, choice: AvatarId) => {
       const child = await createChild(name);
+      setAvatar(child.id, choice);
       setKids((current) => [...(current ?? []), child]);
       setActiveChildId(child.id);
     },
-    [setActiveChildId],
+    [setActiveChildId, setAvatar],
   );
 
   const signOut = useCallback(() => {
@@ -249,10 +296,6 @@ export default function HomeScreen() {
     }
   };
 
-  const books = useMemo(
-    () => buildBookViews(UNITS, (unitId) => progress.has(unitId), unlockAll),
-    [progress, unlockAll],
-  );
   const openBook = books.find((entry) => entry.id === bookId) ?? null;
 
   if (!ready || !splashDone) {
@@ -267,6 +310,9 @@ export default function HomeScreen() {
     return (
       <DarkPage>
         <View style={styles.errorBox}>
+          <View style={styles.errorCapi}>
+            <Capi pose={/network|fetch|internet|timeout/i.test(loadError) ? "noInternet" : "oops"} size={200} />
+          </View>
           <Text style={darkStyles.title}>Hindi ma-load ang data</Text>
           <Text style={darkStyles.body}>{loadError}</Text>
           <Button3D label="Subukan ulit" onPress={() => void refresh()} />
@@ -364,7 +410,6 @@ export default function HomeScreen() {
     );
   }
 
-  const openSettings = () => setView("settings");
   const loaded = progressFor === activeChild.id;
   const inBook = tab === "libro" && openBook !== null && loaded;
 
@@ -378,8 +423,8 @@ export default function HomeScreen() {
                 name={activeChild.display_name}
                 streak={activeChild.streak_days}
                 yuzu={yuzu}
+                avatar={avatar}
                 onProfile={() => setTab("profile")}
-                onSettings={openSettings}
               />
             ) : null}
             {!loaded ? (
@@ -403,9 +448,9 @@ export default function HomeScreen() {
             )}
           </View>
         ) : null}
-        {tab === "review" ? <ReviewScreen words={missed} onStart={startReview} onSettings={openSettings} /> : null}
+        {tab === "review" ? <ReviewScreen words={missed} onStart={startReview} /> : null}
         {tab === "awards" ? (
-          <AwardsScreen books={books} progress={progress} streak={activeChild.streak_days} xp={activeChild.xp} onSettings={openSettings} />
+          <AwardsScreen earned={earnedNow} />
         ) : null}
         {tab === "profile" ? (
           <ProfileScreen
@@ -415,7 +460,8 @@ export default function HomeScreen() {
             xp={activeChild.xp}
             lessonsDone={progress.size}
             onSwitchChild={switchChild}
-            onSettings={openSettings}
+            avatar={avatar}
+            onAvatar={(id) => setAvatar(activeChild.id, id)}
           />
         ) : null}
       </View>
@@ -439,6 +485,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.bg },
   errorBox: { flex: 1, justifyContent: "center", gap: 14 },
+  errorCapi: { alignItems: "center" },
   legacy: { flex: 1, backgroundColor: "#FFFFFF" },
   back: { paddingHorizontal: 24, paddingTop: 12 },
   backText: { color: "#1f6feb", fontSize: 18 },

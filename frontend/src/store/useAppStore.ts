@@ -20,6 +20,15 @@ type AppState = {
   missed: Record<string, string[]>;
   addMissed: (childId: string, word: string) => void;
   clearMissed: (childId: string, word: string) => void;
+  /** The avatar each child picked (kept on this phone). */
+  avatars: Record<string, string>;
+  setAvatar: (childId: string, avatar: string) => void;
+  /** Medals each child has earned (kept on this phone). */
+  medals: Record<string, string[]>;
+  addMedals: (childId: string, ids: readonly string[]) => void;
+  /** The one-tap microphone tutorial has been shown once. */
+  seenMicTutorial: boolean;
+  setSeenMicTutorial: (value: boolean) => void;
   /** Emails that have signed in on this phone, for the "Maligayang pagbabalik" list. Never passwords. */
   savedAccounts: string[];
   rememberAccount: (email: string) => void;
@@ -46,6 +55,17 @@ export const useAppStore = create<AppState>()(
           const list = state.missed[childId] ?? [];
           return list.includes(word) ? { missed: { ...state.missed, [childId]: list.filter((w) => w !== word) } } : state;
         }),
+      avatars: {},
+      setAvatar: (childId, avatar) => set((state) => ({ avatars: { ...state.avatars, [childId]: avatar } })),
+      medals: {},
+      addMedals: (childId, ids) =>
+        set((state) => {
+          const have = new Set(state.medals[childId] ?? []);
+          const fresh = ids.filter((id) => !have.has(id));
+          return fresh.length === 0 ? state : { medals: { ...state.medals, [childId]: [...have, ...fresh] } };
+        }),
+      seenMicTutorial: false,
+      setSeenMicTutorial: (value) => set({ seenMicTutorial: value }),
       savedAccounts: [],
       rememberAccount: (email) =>
         set((state) => (state.savedAccounts.includes(email) ? state : { savedAccounts: [email, ...state.savedAccounts].slice(0, 5) })),

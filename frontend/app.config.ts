@@ -1,7 +1,7 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
 const MIC_REASON =
-  "Marungko listens to your child's voice so it can check how they read each sound and word.";
+  "Basa-Bata listens to your child's voice so it can check how they read each sound and word.";
 
 // Plugins we re-add below with options; drop any plain copy from app.json.
 const MANAGED = new Set(["expo-audio", "expo-dev-client"]);

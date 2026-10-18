@@ -1,11 +1,13 @@
+import { Image } from "expo-image";
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors } from "../../theme/colors";
 import { font } from "../../theme/fonts";
 import { book } from "../../theme/book";
+import { ICONS } from "../art/assets";
 import PondCapy from "../art/PondCapy";
 import { FROG_BOX, FROG_DX, FROG_DY, NODE_H, NODE_W, WATER_BOTTOM } from "../art/pondGeometry";
-import type { UnitState } from "./pages";
+import type { UnitIcon, UnitState } from "./pages";
 
 export { FROG_DX, FROG_DY, NODE_H, NODE_W };
 export const FROG_W = FROG_BOX;
@@ -20,7 +22,7 @@ const STATE_LABEL: Record<UnitState, string> = {
 
 type Props = {
   state: UnitState;
-  icon: string;
+  icon: UnitIcon;
   stars: number;
   title: string;
   /** Change this number to make the capybara shake (a locked lesson was tapped). */
@@ -57,7 +59,7 @@ export default function CapyNode({ state, icon, stars, title, shakeKey, phase, o
 
       {locked ? (
         <View style={styles.lockChip}>
-          <Text style={styles.lockText}>🔒</Text>
+          <Image source={ICONS.lock} contentFit="contain" style={styles.lockImage} />
         </View>
       ) : null}
       {state === "current" ? (
@@ -69,13 +71,23 @@ export default function CapyNode({ state, icon, stars, title, shakeKey, phase, o
       <View style={styles.labelWrap}>
         <View style={[styles.label, locked && styles.labelDim]}>
           <View style={styles.iconChip}>
-            <Text style={styles.iconText}>{icon}</Text>
+            {"image" in icon ? (
+              <Image source={icon.image} contentFit="contain" style={styles.iconImage} />
+            ) : (
+              <Text style={styles.iconText}>{icon.text}</Text>
+            )}
           </View>
           <Text style={styles.labelText} numberOfLines={1}>
             {title}
           </Text>
         </View>
-        {state === "done" ? <Text style={styles.stars}>{"⭐".repeat(Math.max(1, stars))}</Text> : null}
+        {state === "done" ? (
+          <View style={styles.stars}>
+            {[1, 2, 3].map((n) => (
+              <Image key={n} source={n <= Math.max(1, stars) ? ICONS.star : ICONS.starEmpty} contentFit="contain" style={styles.star} />
+            ))}
+          </View>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -93,7 +105,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  lockText: { fontSize: 15 },
+  lockImage: { width: 20, height: 20 },
   startChip: {
     position: "absolute",
     right: 4,
@@ -128,7 +140,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  iconImage: { width: 22, height: 22 },
   iconText: { fontFamily: font.bold, fontSize: 13, color: book.ink },
   labelText: { fontFamily: font.bold, fontSize: 13, color: book.ink, flexShrink: 1 },
-  stars: { fontSize: 13, marginTop: 2 },
+  stars: { flexDirection: "row", gap: 1, marginTop: 2 },
+  star: { width: 18, height: 18 },
 });

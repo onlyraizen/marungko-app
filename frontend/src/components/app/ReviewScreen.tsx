@@ -13,16 +13,15 @@ type Props = {
   /** Words the child missed and has not yet got right. */
   words: readonly string[];
   onStart: () => void;
-  onSettings: () => void;
 };
 
 /** "Balik-aral": a short round of the words the child missed, so they can try them again. */
-export default function ReviewScreen({ words, onStart, onSettings }: Props) {
+export default function ReviewScreen({ words, onStart }: Props) {
   const count = words.length;
   const shown = words.slice(0, 6);
   return (
     <View style={styles.root}>
-      <ScreenHeader title="Balik-aral" onSettings={onSettings} />
+      <ScreenHeader title="Balik-aral" />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <View>

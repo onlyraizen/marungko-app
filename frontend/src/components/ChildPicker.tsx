@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -11,6 +12,9 @@ import {
   View,
 } from "react-native";
 import type { Child } from "../services/progress";
+import { useAppStore } from "../store/useAppStore";
+import { AVATARS, type AvatarId } from "./art/assets";
+import AvatarPicker from "./ui/AvatarPicker";
 import { font } from "../theme/fonts";
 import { dark, darkStyles, DarkPage, HelloCapi } from "./auth/dark";
 import Button3D from "./ui/Button3D";
@@ -19,13 +23,15 @@ import TextLink from "./ui/TextLink";
 type Props = {
   kids: readonly Child[];
   onSelect: (child: Child) => void;
-  onCreate: (name: string) => Promise<void>;
+  onCreate: (name: string, avatar: AvatarId) => Promise<void>;
   onSignOut: () => void;
 };
 
 /** "Sino ang mag-aaral?" Pick a child profile, or add one. Dark, like the other account screens. */
 export default function ChildPicker({ kids, onSelect, onCreate, onSignOut }: Props) {
+  const avatars = useAppStore((state) => state.avatars);
   const [name, setName] = useState("");
+  const [choice, setChoice] = useState<AvatarId>("capi");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -38,7 +44,7 @@ export default function ChildPicker({ kids, onSelect, onCreate, onSignOut }: Pro
     setBusy(true);
     setMessage(null);
     try {
-      await onCreate(trimmed);
+      await onCreate(trimmed, choice);
       setName("");
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : String(caught));
@@ -65,7 +71,7 @@ export default function ChildPicker({ kids, onSelect, onCreate, onSignOut }: Pro
               accessibilityLabel={kid.display_name}
             >
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{kid.display_name.slice(0, 1).toUpperCase()}</Text>
+                <Image source={AVATARS[(avatars[kid.id] as AvatarId | undefined) ?? "capi"] ?? AVATARS.capi} contentFit="contain" style={styles.avatarImage} />
               </View>
               <View style={styles.cardText}>
                 <Text style={styles.cardTitle} numberOfLines={1}>
@@ -88,6 +94,8 @@ export default function ChildPicker({ kids, onSelect, onCreate, onSignOut }: Pro
             maxLength={40}
           />
           <Text style={styles.hint}>Gumamit ng palayaw para sa privacy ng bata.</Text>
+          <Text style={darkStyles.label}>PUMILI NG AVATAR</Text>
+          <AvatarPicker value={choice} onChange={setChoice} dark />
           {message ? <Text style={styles.message}>{message}</Text> : null}
           {busy ? <ActivityIndicator color={dark.green} style={{ height: 60 }} /> : <Button3D label="Idagdag" disabled={name.trim().length === 0} onPress={add} />}
           <TextLink label="Mag-log out" color={dark.coral} onPress={onSignOut} />
@@ -112,8 +120,8 @@ const styles = StyleSheet.create({
     borderColor: dark.line,
     borderRadius: 18,
   },
-  avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: dark.blue, alignItems: "center", justifyContent: "center" },
-  avatarText: { fontFamily: font.display, fontSize: 26, lineHeight: 36, color: "#12303F", includeFontPadding: false },
+  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#D9F0FA", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  avatarImage: { width: 52, height: 52 },
   cardText: { flexShrink: 1 },
   cardTitle: { fontFamily: font.display, fontSize: 24, lineHeight: 34, color: dark.text, includeFontPadding: false },
   cardMeta: { fontFamily: font.body, fontSize: 14, color: dark.muted },

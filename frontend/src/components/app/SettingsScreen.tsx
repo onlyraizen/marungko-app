@@ -6,6 +6,7 @@ import { font } from "../../theme/fonts";
 import { CapiPeek } from "../art/Capi";
 import Button3D from "../ui/Button3D";
 import { BackIcon, ChevronIcon, CloseIcon } from "../ui/Icons";
+import MicTutorial from "../lesson/MicTutorial";
 import TextLink from "../ui/TextLink";
 
 type Route = "root" | "prefs" | "profile" | "notif" | "sound" | "parent" | "privacy" | "help" | "feedback" | "terms";
@@ -56,6 +57,7 @@ export default function SettingsScreen(props: Props) {
   const insets = useSafeAreaInsets();
   const [route, setRoute] = useState<Route>("root");
   const root = route === "root";
+  const [tutorial, setTutorial] = useState(false);
 
   return (
     <View style={styles.root}>
@@ -75,8 +77,9 @@ export default function SettingsScreen(props: Props) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {root ? <Root {...props} go={setRoute} /> : <Page route={route} {...props} go={setRoute} />}
+        {root ? <Root {...props} go={setRoute} /> : <Page route={route} {...props} go={setRoute} onTutorial={() => setTutorial(true)} />}
       </ScrollView>
+      {tutorial ? <MicTutorial onClose={() => setTutorial(false)} /> : null}
     </View>
   );
 }
@@ -133,7 +136,7 @@ function ToggleRow({ title, text, value, onChange }: { title: string; text: stri
   );
 }
 
-function Page({ route, go, ...p }: Props & { route: Route; go: (route: Route) => void }) {
+function Page({ route, go, onTutorial, ...p }: Props & { route: Route; go: (route: Route) => void; onTutorial: () => void }) {
   switch (route) {
     case "prefs":
     case "sound":
@@ -174,6 +177,7 @@ function Page({ route, go, ...p }: Props & { route: Route; go: (route: Route) =>
           <Text style={styles.body}>
             Kapag hindi marinig ng telepono ang bata, subukan sa tahimik na lugar at ilapit nang kaunti ang telepono.
           </Text>
+          <Button3D label="Panoorin ang tutorial sa mikropono" tone="info" onPress={onTutorial} />
         </>
       );
     case "privacy":

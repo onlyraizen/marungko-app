@@ -325,9 +325,10 @@ function PondScroll(props: ScrollProps) {
       onLocked(unit);
       return;
     }
-    // A short scroll keeps the lesson in view while the frog hops to it.
+    // The start panel opens at once; the frog hops to the lesson at the same time.
+    onSelect(unit);
     scrollTo(i, true);
-    hopTo(i, () => onSelect(unit));
+    hopTo(i);
   };
 
   const heroY = Animated.add(ty, Animated.multiply(lift, -ARC));

@@ -35,6 +35,9 @@ export default function BookCard({ view, index, shakeKey, onPress }: Props) {
     return () => loop.stop();
   }, [bob, index]);
 
+  // A long word shrinks the bubble text so it never wraps to a third line and spills onto the cover.
+  const longest = Math.max(...view.say.split(" ").map((word) => word.length));
+  const bubbleSize = longest > 11 ? 20 : longest > 9 ? 22 : 26;
   const percent = view.totalUnits > 0 ? view.doneUnits / view.totalUnits : 0;
   const label = `${view.title}, ${view.subtitle}, ${
     soon ? "malapit na" : locked ? "naka-lock" : `${view.doneUnits} sa ${view.totalUnits} aralin tapos na`
@@ -47,7 +50,9 @@ export default function BookCard({ view, index, shakeKey, onPress }: Props) {
       </Animated.View>
 
       <View style={styles.bubble}>
-        <Text style={styles.bubbleText}>{view.say}</Text>
+        <Text style={[styles.bubbleText, { fontSize: bubbleSize, lineHeight: Math.round(bubbleSize * 1.32) }]} numberOfLines={2}>
+          {view.say}
+        </Text>
         <View style={styles.tail} />
       </View>
 

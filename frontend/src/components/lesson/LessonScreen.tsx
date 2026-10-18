@@ -5,6 +5,7 @@ import { buildTapQuiz } from "../../content/quiz";
 import { syllabify } from "../../content/syllables";
 import { useGuideAudio } from "../../hooks/useGuideAudio";
 import { useLiveTranscription } from "../../hooks/useLiveTranscription";
+import { playSfx } from "../../hooks/useSfx";
 import type { CompleteResult } from "../../services/progress";
 import { useAppStore } from "../../store/useAppStore";
 import { colors } from "../../theme/colors";
@@ -13,9 +14,13 @@ import type { Pose } from "../art/assets";
 import FeedbackSheet from "./FeedbackSheet";
 import LessonResult from "./LessonResult";
 import { FEEDBACK, PRAISE } from "./lessonText";
+import MicTutorial from "./MicTutorial";
 import { exampleFor, pictureOf } from "./pictures";
 import RepeatView from "./RepeatView";
 import TapQuiz from "./TapQuiz";
+
+/** What the end of a lesson shows: the saved XP and streak, and any medals this lesson earned. */
+export type LessonSummary = CompleteResult & { medals: string[] };
 
 type Props = {
   title: string;
@@ -35,20 +40,26 @@ type Props = {
   /** A flag or thumb on an item, saved with the child's answers. */
   onNote?: (item: string, note: string) => void;
   /** Called once when the whole lesson is finished; returns the XP and streak to show. */
-  onComplete?: (correct: number, total: number) => Promise<CompleteResult>;
+  onComplete?: (correct: number, total: number) => Promise<LessonSummary>;
 };
 
 type Phase = "practice" | "quiz" | "result";
 
-const POSE: Record<MatchResult["kind"], Pose> = { correct: "wave", almost: "almost", incorrect: "thinking" };
+const POSE: Record<MatchResult["kind"], Pose> = { correct: "wave", almost: "almost", incorrect: "tryAgain" };
+
+/** A right answer is accepted this long after the words match, without waiting for the speech service to hear a pause. */
+const EARLY_ACCEPT_MS = 450;
 
 /**
  * One lesson, in the Duolingo style: Capi says each word and the child says it back (hands-free),
  * then a tap-the-syllables quiz, then the results.
  */
 export default function LessonScreen({ title, items, words, baseYuzu, review = false, onDone, onAttempt, onQuizAnswer, onNote, onComplete }: Props) {
-  const { finalText, partialText, error, busy, finished, heardSpeech, isListening, prepare, start, stop, confidence } = useLiveTranscription();
+  const { finalText, partialText, error, busy, finished, heardSpeech, isListening, prepare, start, stop, finishNow, confidence } = useLiveTranscription();
   const slow = useAppStore((state) => state.slowGuide);
+  const seenTutorial = useAppStore((state) => state.seenMicTutorial);
+  const setSeenTutorial = useAppStore((state) => state.setSeenMicTutorial);
+  const [tutorial, setTutorial] = useState(!seenTutorial && !review);
   const setSlow = useAppStore((state) => state.setSlowGuide);
   const guide = useGuideAudio(slow);
   const questions = useMemo(() => buildTapQuiz(words), [words]);
@@ -62,7 +73,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
   const [practiceCorrect, setPracticeCorrect] = useState(0);
   const [quizScore, setQuizScore] = useState({ correct: 0, total: 0 });
   const [saving, setSaving] = useState(false);
-  const [summary, setSummary] = useState<CompleteResult | null>(null);
+  const [summary, setSummary] = useState<LessonSummary | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [flagged, setFlagged] = useState(false);
   const awaitingResult = useRef(false);
@@ -88,12 +99,12 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
 
   // Capi says each new item (and its example word). The microphone stays closed while he speaks.
   useEffect(() => {
-    if (phase !== "practice" || practiceDone || target === undefined) return;
+    if (phase !== "practice" || practiceDone || target === undefined || tutorial) return;
     const lines = example ? [target, example.word] : [target];
     const timer = setTimeout(() => guide.sayAll(lines), 450);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, index, practiceDone, target, guide.sayAll]);
+  }, [phase, index, practiceDone, target, tutorial, guide.sayAll]);
 
   useEffect(() => {
     if (finished && awaitingResult.current && target !== undefined) {
@@ -114,9 +125,23 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
     }
   }, [finished, finalText, partialText, target, onAttempt]);
 
-  // Spoken feedback after each answer.
+  // The moment the words match, accept them: no need to wait for the speech service to notice a pause.
   useEffect(() => {
-    if (result) guide.say(result.kind === "correct" ? praise : FEEDBACK[result.kind].voice);
+    if (!isListening || !heardSpeech || target === undefined || phase !== "practice") return;
+    if (matchUtterance(`${finalText}${partialText}`, target).kind !== "correct") return;
+    const timer = setTimeout(finishNow, EARLY_ACCEPT_MS);
+    return () => clearTimeout(timer);
+  }, [isListening, heardSpeech, finalText, partialText, target, phase, finishNow]);
+
+  // A chime and then Capi's voice after each answer.
+  useEffect(() => {
+    if (!result) return;
+    if (result.kind === "correct") {
+      void playSfx("correct");
+      const timer = setTimeout(() => guide.say(praise), 380);
+      return () => clearTimeout(timer);
+    }
+    guide.say(FEEDBACK[result.kind].voice);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, guide.say]);
 
@@ -184,6 +209,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
         onAnswer={(word, ok, heard, skipped) => {
           setQuizScore((current) => ({ correct: current.correct + (ok ? 1 : 0), total: current.total + 1 }));
           if (ok) {
+            void playSfx("correct");
             quizCorrect.current += 1;
             setEarned((n) => n + 1);
             setCombo((n) => n + 1);
@@ -218,7 +244,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
 
   if (practiceDone || target === undefined) return <View style={styles.root} />;
 
-  const pose: Pose = result ? POSE[result.kind] : "rest";
+  const pose: Pose = result ? POSE[result.kind] : micBlocked ? "micBlocked" : "rest";
   const sheetUp = result !== null && !isListening;
   const parts = syllabify(target);
   const slash = parts.map((part) => `/${part}/`).join(" ... ");
@@ -273,6 +299,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
     ) : null;
 
   return (
+    <View style={styles.root}>
     <RepeatView
       item={target}
       isSyllable={isSyllable}
@@ -295,6 +322,15 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
       onClose={close}
       sheet={sheet}
     />
+      {tutorial ? (
+        <MicTutorial
+          onClose={() => {
+            setTutorial(false);
+            setSeenTutorial(true);
+          }}
+        />
+      ) : null}
+    </View>
   );
 }
 

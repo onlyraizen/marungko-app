@@ -30,7 +30,8 @@
     "content:build": "tsx scripts/build-content.mts",
     "content:audio": "tsx --env-file=backend/.env scripts/generate-audio.mts",
     "voice:trial": "tsx --env-file=backend/.env scripts/voice-trial.mts",
-    "content:compile-audio": "tsx scripts/compile-audio.mts"
+    "content:compile-audio": "tsx scripts/compile-audio.mts",
+    "content:normalize-audio": "tsx scripts/normalize-audio.mts"
   },
   "devDependencies": {
     "rimraf": "^6.0.0",
