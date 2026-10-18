@@ -3,6 +3,7 @@ import { Nunito_700Bold, Nunito_800ExtraBold } from "@expo-google-fonts/nunito";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar, View } from "react-native";
+import { TransitionProvider } from "../components/transition/TransitionHost";
 import { colors } from "../theme/colors";
 
 export default function RootLayout() {
@@ -14,7 +15,9 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar barStyle="dark-content" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
+      <TransitionProvider>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
+      </TransitionProvider>
     </>
   );
 }

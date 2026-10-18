@@ -14,6 +14,12 @@ import PictureCard from "./PictureCard";
 import RoundSpeaker from "./RoundSpeaker";
 import SlowLink from "./SlowLink";
 
+/** Width reserved on each side of the word for the speaker button, so the word stays centred whether or not it shows. */
+const SPEAKER_SLOT = 52;
+const SPEAKER_SIZE = 44;
+/** Capi's canvas has an empty strip on the left (body starts at 19.6%); keep a little of it. */
+const CAPI_TRIM = 0.18;
+
 type Props = {
   item: string;
   isSyllable: boolean;
@@ -40,10 +46,10 @@ type Props = {
 };
 
 /** The word in 56px Baloo with dots between the syllables. Long phrases shrink and wrap by word. */
-function DottedWord({ text, color }: { text: string; color: string }) {
+function DottedWord({ text, color, room }: { text: string; color: string; room: number }) {
   const words = text.toLowerCase().split(/\s+/).filter(Boolean);
   const longest = Math.max(...words.map((word) => syllabify(word).join("·").length));
-  const size = Math.max(26, Math.min(56, Math.floor(200 / (longest * 0.62))));
+  const size = Math.max(22, Math.min(56, Math.floor(room / (longest * 0.62))));
   return (
     <View style={styles.wordBox}>
       {words.map((word, w) => (
@@ -64,6 +70,9 @@ function DottedWord({ text, color }: { text: string; color: string }) {
 export default function RepeatView(props: Props) {
   const { width } = useWindowDimensions();
   const capiSize = Math.min(230, Math.max(170, width - 168));
+  // The bubble is centred on the screen; the word is centred in it, with the speaker button tucked into the left edge.
+  const bubbleWidth = Math.min(320, width - 48);
+  const room = bubbleWidth - 28 - SPEAKER_SLOT * 2;
   const color = props.verdict === "correct" ? colors.primaryInk : props.verdict === "almost" || props.verdict === "incorrect" ? colors.dangerDark : colors.ink;
   const answered = props.verdict !== null;
   const hint = props.isSyllable ? "Pindutin ang mikropono at sabihin ang pantig" : "Pindutin ang mikropono at sabihin ang salita";
@@ -77,19 +86,23 @@ export default function RepeatView(props: Props) {
       onClose={props.onClose}
     >
       <View style={styles.bubbleRow}>
-        <Bubble tail="bottomLeft" style={styles.bubble}>
+        <Bubble tail="bottomLeft" style={[styles.bubble, { width: bubbleWidth }]}>
           <View style={styles.bubbleInner}>
-            {!answered ? <RoundSpeaker disabled={props.listening || !props.canSpeak} onPress={props.onSpeaker} /> : null}
-            <DottedWord text={props.item} color={color} />
+            <DottedWord text={props.item} color={color} room={room} />
+            {!answered ? (
+              <View style={styles.speaker}>
+                <RoundSpeaker size={SPEAKER_SIZE} disabled={props.listening || !props.canSpeak} onPress={props.onSpeaker} />
+              </View>
+            ) : null}
           </View>
         </Bubble>
-        <View style={styles.slow}>
+        <View style={[styles.slow, { width: bubbleWidth }]}>
           <SlowLink on={props.slow} onPress={props.onToggleSlow} />
         </View>
       </View>
 
       <View style={styles.stage}>
-        <CapiActor size={capiSize} talking={props.talking} listening={props.listening} pose={props.pose} />
+        <CapiActor size={capiSize} trimLeft={CAPI_TRIM} talking={props.talking} listening={props.listening} pose={props.pose} />
         {props.picture ? (
           <View style={styles.card}>
             <PictureCard word={props.picture.word} syllable={props.picture.syllable} size={84} />
@@ -122,10 +135,11 @@ export default function RepeatView(props: Props) {
 
 const styles = StyleSheet.create({
   bubbleRow: { marginTop: 14, alignItems: "center" },
-  bubble: { width: 290, minHeight: 100, borderRadius: 26, paddingVertical: 8, paddingHorizontal: 14, justifyContent: "center" },
-  bubbleInner: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 14 },
-  slow: { alignSelf: "flex-end", marginRight: 48, marginTop: 8 },
-  wordBox: { alignItems: "center", flexShrink: 1 },
+  bubble: { minHeight: 100, borderRadius: 26, paddingVertical: 8, paddingHorizontal: 14, justifyContent: "center" },
+  bubbleInner: { alignItems: "center", justifyContent: "center", paddingHorizontal: SPEAKER_SLOT },
+  speaker: { position: "absolute", left: -6, top: 0, bottom: 0, justifyContent: "center" },
+  slow: { alignItems: "flex-end", marginTop: 8 },
+  wordBox: { alignItems: "center", alignSelf: "stretch" },
   word: { fontFamily: font.display, letterSpacing: 1, includeFontPadding: false, textAlign: "center" },
   dot: { color: "#3A9ED4" },
   stage: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 2, paddingHorizontal: 8 },

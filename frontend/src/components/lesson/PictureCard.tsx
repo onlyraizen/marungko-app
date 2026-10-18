@@ -12,7 +12,10 @@ type Props = {
 
 /** The UI pack's picture card: a picture and its word, with the same thick lower edge as the other cards. */
 export default function PictureCard({ word, syllable = null, size = 96 }: Props) {
-  const wordSize = word.length > 12 ? 14 : word.length > 8 ? 18 : 24;
+  // Fit the word to the card instead of letting it be cut off: roughly 0.68 em per letter in Baloo.
+  const room = size + 28 - 16;
+  const wordSize = Math.max(12, Math.min(24, Math.floor(room / (Math.max(...word.split(" ").map((part) => part.length), 1) * 0.68))));
+  const lines = word.includes(" ") ? 2 : 1;
   return (
     <View style={[styles.card, { width: size + 28 }]}>
       <WordPicture word={word} size={size} />
@@ -21,12 +24,12 @@ export default function PictureCard({ word, syllable = null, size = 96 }: Props)
           <Text style={styles.small}>
             <Text style={styles.syl}>{syllable.toUpperCase()}</Text> para sa
           </Text>
-          <Text style={[styles.word, { fontSize: wordSize }]} numberOfLines={1} adjustsFontSizeToFit>
+          <Text style={[styles.word, { fontSize: wordSize, lineHeight: wordSize * 1.4 }]} numberOfLines={lines} adjustsFontSizeToFit>
             {word}
           </Text>
         </View>
       ) : (
-        <Text style={[styles.word, { fontSize: wordSize }]} numberOfLines={1} adjustsFontSizeToFit>
+        <Text style={[styles.word, { fontSize: wordSize, lineHeight: wordSize * 1.4 }]} numberOfLines={lines} adjustsFontSizeToFit>
           {word}
         </Text>
       )}

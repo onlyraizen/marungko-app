@@ -47,6 +47,14 @@ export const LOOPS = {
 } as const;
 export type Loop = keyof typeof LOOPS;
 
+/** Full-screen transitions from the splash pack, cut down to 1.3-1.9 s so they never feel slow (transparent APNG). */
+export const TRANSITIONS = {
+  launch: require("../../../assets/art/transitions/launch.png"),
+  pond: require("../../../assets/art/transitions/pond-wipe.png"),
+  book: require("../../../assets/art/transitions/book-open.png"),
+  burst: require("../../../assets/art/transitions/sunburst.png"),
+} as const;
+
 /** Stills of the two newest animations, shown while the animation file is still decoding. */
 export const STILLS = {
   hello: require("../../../assets/art/capi/hello-static.png"),

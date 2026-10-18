@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAppStore } from "../../store/useAppStore";
 import { colors } from "../../theme/colors";
 import { font } from "../../theme/fonts";
 import { CapiPeek } from "../art/Capi";
@@ -136,6 +137,19 @@ function ToggleRow({ title, text, value, onChange }: { title: string; text: stri
   );
 }
 
+function AnimationsToggle() {
+  const animations = useAppStore((state) => state.animations);
+  const setAnimations = useAppStore((state) => state.setAnimations);
+  return (
+    <ToggleRow
+      title="Mga animasyon"
+      text="Maiikling animasyon kapag nagbubukas ng libro o nagsisimula ng aralin. Patayin kung bumabagal ang telepono."
+      value={animations}
+      onChange={setAnimations}
+    />
+  );
+}
+
 function Page({ route, go, onTutorial, ...p }: Props & { route: Route; go: (route: Route) => void; onTutorial: () => void }) {
   switch (route) {
     case "prefs":
@@ -148,6 +162,7 @@ function Page({ route, go, onTutorial, ...p }: Props & { route: Route; go: (rout
             value={p.slow}
             onChange={p.onSlow}
           />
+          {route === "prefs" ? <AnimationsToggle /> : null}
           {route === "sound" ? (
             <Text style={styles.body}>
               Pindutin lang ang mikropono nang isang beses. Kusa itong titigil kapag tapos nang magsalita ang bata. Kung hindi gumagana,

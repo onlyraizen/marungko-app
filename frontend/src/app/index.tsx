@@ -22,6 +22,7 @@ import LessonScreen, { type LessonSummary } from "../components/lesson/LessonScr
 import LiveTranscript from "../components/LiveTranscript";
 import MicSpike from "../components/MicSpike";
 import Splash from "../components/Splash";
+import { useTransition } from "../components/transition/TransitionHost";
 import Button3D from "../components/ui/Button3D";
 import TopBar from "../components/ui/TopBar";
 import { earnedMedals, type AwardStats } from "../content/awards";
@@ -47,6 +48,7 @@ type View_ = "main" | "lesson" | "review" | "settings" | "live" | "mic";
 /** Sign in, choose the child, then the tabs: the shelf of books, review, awards and profile. */
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const play = useTransition();
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
   const hydrated = useStoreHydrated();
@@ -80,12 +82,6 @@ export default function HomeScreen() {
   const [check, setCheck] = useState<string | null>(null);
 
   const userId = session?.user.id;
-
-  // The splash shows for a moment on every launch, then the app takes over.
-  useEffect(() => {
-    const timer = setTimeout(() => setSplashDone(true), 1900);
-    return () => clearTimeout(timer);
-  }, []);
 
   const activeChild = useMemo(
     () => kids?.find((kid) => kid.id === activeChildId) ?? null,
@@ -238,9 +234,9 @@ export default function HomeScreen() {
       const child = await createChild(name);
       setAvatar(child.id, choice);
       setKids((current) => [...(current ?? []), child]);
-      setActiveChildId(child.id);
+      play("pond", () => setActiveChildId(child.id));
     },
-    [setActiveChildId, setAvatar],
+    [setActiveChildId, setAvatar, play],
   );
 
   const signOut = useCallback(() => {
@@ -251,15 +247,20 @@ export default function HomeScreen() {
   }, [setActiveChildId]);
 
   const switchChild = useCallback(() => {
-    setView("main");
-    setTab("libro");
-    setBookId(null);
-    setActiveChildId(null);
-  }, [setActiveChildId]);
+    play("pond", () => {
+      setView("main");
+      setTab("libro");
+      setBookId(null);
+      setActiveChildId(null);
+    });
+  }, [setActiveChildId, play]);
 
   const startReview = () => {
-    setReviewWords(missed.slice(0, REVIEW_ROUND));
-    setView("review");
+    const words = missed.slice(0, REVIEW_ROUND);
+    play("burst", () => {
+      setReviewWords(words);
+      setView("review");
+    });
   };
 
   const chooseMore = (choice: MoreChoice) => {
@@ -299,7 +300,7 @@ export default function HomeScreen() {
   const openBook = books.find((entry) => entry.id === bookId) ?? null;
 
   if (!ready || !splashDone) {
-    return <Splash />;
+    return <Splash onDone={() => setSplashDone(true)} />;
   }
 
   if (!session) {
@@ -330,7 +331,7 @@ export default function HomeScreen() {
     return (
       <ChildPicker
         kids={kids}
-        onSelect={(child) => setActiveChildId(child.id)}
+        onSelect={(child) => play("pond", () => setActiveChildId(child.id))}
         onCreate={handleCreateChild}
         onSignOut={signOut}
       />
@@ -438,13 +439,15 @@ export default function HomeScreen() {
                 progress={progress}
                 unlockAll={unlockAll}
                 onBack={() => setBookId(null)}
-                onStart={(selected) => {
-                  setUnit(selected);
-                  setView("lesson");
-                }}
+                onStart={(selected) =>
+                  play("burst", () => {
+                    setUnit(selected);
+                    setView("lesson");
+                  })
+                }
               />
             ) : (
-              <Shelf books={books} onOpen={(entry) => setBookId(entry.id)} />
+              <Shelf books={books} onOpen={(entry) => play("book", () => setBookId(entry.id))} />
             )}
           </View>
         ) : null}

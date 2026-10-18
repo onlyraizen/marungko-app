@@ -26,6 +26,9 @@ type AppState = {
   /** Medals each child has earned (kept on this phone). */
   medals: Record<string, string[]>;
   addMedals: (childId: string, ids: readonly string[]) => void;
+  /** Short screen transitions (book opening, lesson start). Can be switched off on slow phones. */
+  animations: boolean;
+  setAnimations: (value: boolean) => void;
   /** The one-tap microphone tutorial has been shown once. */
   seenMicTutorial: boolean;
   setSeenMicTutorial: (value: boolean) => void;
@@ -64,6 +67,8 @@ export const useAppStore = create<AppState>()(
           const fresh = ids.filter((id) => !have.has(id));
           return fresh.length === 0 ? state : { medals: { ...state.medals, [childId]: [...have, ...fresh] } };
         }),
+      animations: true,
+      setAnimations: (value) => set({ animations: value }),
       seenMicTutorial: false,
       setSeenMicTutorial: (value) => set({ seenMicTutorial: value }),
       savedAccounts: [],
