@@ -14,9 +14,11 @@ import PictureCard from "./PictureCard";
 import RoundSpeaker from "./RoundSpeaker";
 import SlowLink from "./SlowLink";
 
-/** Width reserved on each side of the word for the speaker button, so the word stays centred whether or not it shows. */
-const SPEAKER_SLOT = 52;
-const SPEAKER_SIZE = 44;
+/** The compact bubble from the design: a blue speaker button beside the word, the bubble hugging both. */
+const SPEAKER_SIZE = 40;
+const SPEAKER_GAP = 10;
+const BUBBLE_PADDING = 12;
+const MAX_WORD_SIZE = 40;
 /** Capi's canvas has an empty strip on the left (body starts at 19.6%); keep a little of it. */
 const CAPI_TRIM = 0.18;
 
@@ -45,11 +47,11 @@ type Props = {
   sheet: ReactNode;
 };
 
-/** The word in 56px Baloo with dots between the syllables. Long phrases shrink and wrap by word. */
+/** The word in 40px Baloo with dots between the syllables. Long phrases shrink and wrap by word. */
 function DottedWord({ text, color, room }: { text: string; color: string; room: number }) {
   const words = text.toLowerCase().split(/\s+/).filter(Boolean);
   const longest = Math.max(...words.map((word) => syllabify(word).join("·").length));
-  const size = Math.max(22, Math.min(56, Math.floor(room / (longest * 0.62))));
+  const size = Math.max(22, Math.min(MAX_WORD_SIZE, Math.floor(room / (longest * 0.62))));
   return (
     <View style={styles.wordBox}>
       {words.map((word, w) => (
@@ -70,9 +72,9 @@ function DottedWord({ text, color, room }: { text: string; color: string; room: 
 export default function RepeatView(props: Props) {
   const { width } = useWindowDimensions();
   const capiSize = Math.min(230, Math.max(170, width - 168));
-  // The bubble is centred on the screen; the word is centred in it, with the speaker button tucked into the left edge.
-  const bubbleWidth = Math.min(320, width - 48);
-  const room = bubbleWidth - 28 - SPEAKER_SLOT * 2;
+  // The bubble hugs its content (speaker + word), centred on the screen, never wider than the screen minus margins.
+  const maxBubble = Math.min(320, width - 48);
+  const room = maxBubble - BUBBLE_PADDING * 2 - 4 - SPEAKER_SIZE - SPEAKER_GAP;
   const color = props.verdict === "correct" ? colors.primaryInk : props.verdict === "almost" || props.verdict === "incorrect" ? colors.dangerDark : colors.ink;
   const answered = props.verdict !== null;
   const hint = props.isSyllable ? "Pindutin ang mikropono at sabihin ang pantig" : "Pindutin ang mikropono at sabihin ang salita";
@@ -86,18 +88,18 @@ export default function RepeatView(props: Props) {
       onClose={props.onClose}
     >
       <View style={styles.bubbleRow}>
-        <Bubble tail="bottomLeft" style={[styles.bubble, { width: bubbleWidth }]}>
-          <View style={styles.bubbleInner}>
-            <DottedWord text={props.item} color={color} room={room} />
-            {!answered ? (
-              <View style={styles.speaker}>
+        <View style={{ maxWidth: maxBubble }}>
+          <Bubble tail="bottomLeft" style={styles.bubble}>
+            <View style={styles.bubbleInner}>
+              {!answered ? (
                 <RoundSpeaker size={SPEAKER_SIZE} disabled={props.listening || !props.canSpeak} onPress={props.onSpeaker} />
-              </View>
-            ) : null}
+              ) : null}
+              <DottedWord text={props.item} color={color} room={room} />
+            </View>
+          </Bubble>
+          <View style={styles.slow}>
+            <SlowLink on={props.slow} onPress={props.onToggleSlow} />
           </View>
-        </Bubble>
-        <View style={[styles.slow, { width: bubbleWidth }]}>
-          <SlowLink on={props.slow} onPress={props.onToggleSlow} />
         </View>
       </View>
 
@@ -135,14 +137,14 @@ export default function RepeatView(props: Props) {
 
 const styles = StyleSheet.create({
   bubbleRow: { marginTop: 14, alignItems: "center" },
-  bubble: { minHeight: 100, borderRadius: 26, paddingVertical: 8, paddingHorizontal: 14, justifyContent: "center" },
-  bubbleInner: { alignItems: "center", justifyContent: "center", paddingHorizontal: SPEAKER_SLOT },
-  speaker: { position: "absolute", left: -6, top: 0, bottom: 0, justifyContent: "center" },
-  slow: { alignItems: "flex-end", marginTop: 8 },
-  wordBox: { alignItems: "center", alignSelf: "stretch" },
+  bubble: { minWidth: 190, borderRadius: 22, paddingVertical: 6, paddingHorizontal: BUBBLE_PADDING },
+  bubbleInner: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPEAKER_GAP },
+  slow: { alignItems: "flex-end", marginTop: 6 },
+  wordBox: { alignItems: "center", flexShrink: 1 },
   word: { fontFamily: font.display, letterSpacing: 1, includeFontPadding: false, textAlign: "center" },
   dot: { color: "#3A9ED4" },
-  stage: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 2, paddingHorizontal: 8 },
+  // Sits a little above the middle of the free space, so there is no empty band under the bubble.
+  stage: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 2, paddingHorizontal: 8, paddingBottom: 104 },
   card: { marginLeft: -6, marginTop: 30 },
   micArea: { alignItems: "center", gap: 8, paddingBottom: 14 },
   micSpacer: { height: 240 },
