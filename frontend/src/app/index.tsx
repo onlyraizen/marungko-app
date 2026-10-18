@@ -1,12 +1,14 @@
 import { UNITS, unitItems, type MatchResult, type Unit } from "@marungko/shared";
 import type { Session } from "@supabase/supabase-js";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AwardsScreen from "../components/app/AwardsScreen";
 import LogoutSheet from "../components/app/LogoutSheet";
 import MoreSheet, { type MoreChoice } from "../components/app/MoreSheet";
+import ParentReport from "../components/app/ParentReport";
 import ProfileScreen from "../components/app/ProfileScreen";
+import StreakLostSheet from "../components/app/StreakLostSheet";
 import ReviewScreen from "../components/app/ReviewScreen";
 import SettingsScreen from "../components/app/SettingsScreen";
 import TabBar, { type TabId } from "../components/app/TabBar";
@@ -18,6 +20,7 @@ import { buildBookViews } from "../components/book/books";
 import PondPath from "../components/book/PondPath";
 import Shelf from "../components/book/Shelf";
 import ChildPicker from "../components/ChildPicker";
+import BookCeremony from "../components/lesson/BookCeremony";
 import LessonScreen, { type LessonSummary } from "../components/lesson/LessonScreen";
 import LiveTranscript from "../components/LiveTranscript";
 import MicSpike from "../components/MicSpike";
@@ -26,6 +29,7 @@ import { useTransition } from "../components/transition/TransitionHost";
 import Button3D from "../components/ui/Button3D";
 import TopBar from "../components/ui/TopBar";
 import { earnedMedals, type AwardStats } from "../content/awards";
+import { effectiveStreak, manilaToday, streakWasLost } from "../content/streak";
 import {
   completeUnit,
   createChild,
@@ -43,7 +47,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const REVIEW_ROUND = 6;
 const NO_WORDS: string[] = [];
 
-type View_ = "main" | "lesson" | "review" | "settings" | "live" | "mic";
+type View_ = "main" | "lesson" | "review" | "settings" | "report" | "live" | "mic";
 
 /** Sign in, choose the child, then the tabs: the shelf of books, review, awards and profile. */
 export default function HomeScreen() {
@@ -65,6 +69,8 @@ export default function HomeScreen() {
   const setAvatar = useAppStore((state) => state.setAvatar);
   const medalsByChild = useAppStore((state) => state.medals);
   const addMedals = useAppStore((state) => state.addMedals);
+  const streakNotice = useAppStore((state) => state.streakNotice);
+  const setStreakNotice = useAppStore((state) => state.setStreakNotice);
 
   const [kids, setKids] = useState<Child[] | null>(null);
   const [progress, setProgress] = useState<ReadonlyMap<string, UnitProgress>>(new Map());
@@ -80,6 +86,10 @@ export default function HomeScreen() {
   const [unit, setUnit] = useState<Unit | null>(null);
   const [reviewWords, setReviewWords] = useState<string[]>(NO_WORDS);
   const [check, setCheck] = useState<string | null>(null);
+  // A finished book gets a ceremony after its result screen; the lesson keeps the number until then.
+  const [ceremony, setCeremony] = useState<number | null>(null);
+  const pendingCeremony = useRef<number | null>(null);
+  const [streakSheet, setStreakSheet] = useState(false);
 
   const userId = session?.user.id;
 
@@ -158,6 +168,16 @@ export default function HomeScreen() {
     return set;
   }, [stats, activeChild, medalsByChild]);
 
+  // Once a day, if the streak ended, Capi says so gently (the shelf is the first thing the child sees).
+  useEffect(() => {
+    if (!activeChild || view !== "main") return;
+    const today = manilaToday();
+    if (streakWasLost(activeChild, today) && streakNotice[activeChild.id] !== today) {
+      setStreakNotice(activeChild.id, today);
+      setStreakSheet(true);
+    }
+  }, [activeChild, view, streakNotice, setStreakNotice]);
+
   /** A word the child read or tapped: right takes it off the review list, wrong puts it on. */
   const markWord = useCallback(
     (word: string, ok: boolean) => {
@@ -223,8 +243,11 @@ export default function HomeScreen() {
       const held = new Set(earnedNow);
       const fresh = [...after].filter((id) => !held.has(id));
       addMedals(activeChild.id, [...after]);
+      const bookMedal = fresh.find((id) => /^book\d$/.test(id));
+      if (bookMedal !== undefined) pendingCeremony.current = Number(bookMedal.slice(4));
+      const streakUp = result.streak > effectiveStreak(activeChild);
       await refresh();
-      return { ...result, medals: fresh };
+      return { ...result, medals: fresh, streakUp };
     },
     [activeChild, unit, refresh, progress, stats, earnedNow, addMedals],
   );
@@ -254,6 +277,21 @@ export default function HomeScreen() {
       setActiveChildId(null);
     });
   }, [setActiveChildId, play]);
+
+  /** Back from a lesson: a finished book gets its ceremony first (the lily pad grows over the result screen). */
+  const leaveLesson = () => {
+    const book = pendingCeremony.current;
+    pendingCeremony.current = null;
+    if (book === null) {
+      setView("main");
+      return;
+    }
+    play("iris", () => {
+      setView("main");
+      setBookId(null);
+      setCeremony(book);
+    });
+  };
 
   const startReview = () => {
     const words = missed.slice(0, REVIEW_ROUND);
@@ -339,6 +377,11 @@ export default function HomeScreen() {
   }
 
   const yuzu = Math.floor(activeChild.xp / 10);
+  const streak = effectiveStreak(activeChild);
+
+  if (ceremony !== null) {
+    return <BookCeremony book={ceremony} onDone={() => setCeremony(null)} />;
+  }
 
   if (view === "lesson" && unit) {
     // Letter sounds have no recordings yet, so only syllables and words are spoken.
@@ -350,7 +393,7 @@ export default function HomeScreen() {
         items={items}
         words={unit.words}
         baseYuzu={yuzu}
-        onDone={() => setView("main")}
+        onDone={leaveLesson}
         onAttempt={handleAttempt}
         onQuizAnswer={handleQuizAnswer}
         onNote={handleNote}
@@ -388,6 +431,22 @@ export default function HomeScreen() {
     );
   }
 
+  if (view === "report") {
+    return (
+      <ParentReport
+        childId={activeChild.id}
+        name={activeChild.display_name}
+        xp={activeChild.xp}
+        streak={streak}
+        lessons={progress.size}
+        totalLessons={UNITS.length}
+        wordsLearned={new Set(UNITS.filter((u) => progress.has(u.id)).flatMap((u) => u.words)).size}
+        books={books}
+        onBack={() => setView("settings")}
+      />
+    );
+  }
+
   if (view === "settings") {
     return (
       <View style={styles.fill}>
@@ -402,6 +461,7 @@ export default function HomeScreen() {
           onCheckBackend={() => void checkBackend()}
           onOpenLive={() => setView("live")}
           onOpenMic={() => setView("mic")}
+          onOpenReport={() => setView("report")}
           onSwitchChild={switchChild}
           onLogout={() => setLogoutOpen(true)}
           onClose={() => setView("main")}
@@ -422,7 +482,7 @@ export default function HomeScreen() {
             {!inBook ? (
               <TopBar
                 name={activeChild.display_name}
-                streak={activeChild.streak_days}
+                streak={streak}
                 yuzu={yuzu}
                 avatar={avatar}
                 onProfile={() => setTab("profile")}
@@ -458,7 +518,7 @@ export default function HomeScreen() {
         {tab === "profile" ? (
           <ProfileScreen
             name={activeChild.display_name}
-            streak={activeChild.streak_days}
+            streak={streak}
             yuzu={yuzu}
             xp={activeChild.xp}
             lessonsDone={progress.size}
@@ -481,6 +541,7 @@ export default function HomeScreen() {
         }}
       />
       {moreOpen ? <MoreSheet onChoose={chooseMore} onClose={() => setMoreOpen(false)} /> : null}
+      {streakSheet ? <StreakLostSheet name={activeChild.display_name} days={activeChild.streak_days} onClose={() => setStreakSheet(false)} /> : null}
     </View>
   );
 }

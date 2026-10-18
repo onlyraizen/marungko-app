@@ -22,6 +22,10 @@ export const POSES = {
   noInternet: require("../../../assets/art/capi/poses/no-internet.png"),
   micBlocked: require("../../../assets/art/capi/poses/mic-blocked.png"),
   oops: require("../../../assets/art/capi/poses/something-wrong.png"),
+  dayMissed: require("../../../assets/art/capi/poses/day-missed.png"),
+  pointChart: require("../../../assets/art/capi/poses/point-chart.png"),
+  noMic: require("../../../assets/art/capi/poses/no-mic-found.png"),
+  tooNoisy: require("../../../assets/art/capi/poses/too-noisy.png"),
 } as const;
 export type Pose = keyof typeof POSES;
 
@@ -53,6 +57,35 @@ export const TRANSITIONS = {
   pond: require("../../../assets/art/transitions/pond-wipe.png"),
   book: require("../../../assets/art/transitions/book-open.png"),
   burst: require("../../../assets/art/transitions/sunburst.png"),
+  iris: require("../../../assets/art/transitions/iris-in.png"),
+  ceremony: require("../../../assets/art/transitions/ceremony.png"),
+  ceremonyEnd: require("../../../assets/art/transitions/ceremony-end.png"),
+} as const;
+
+/** The streak flame: burning (loops), popping when the streak grows, going out when it is lost. */
+export const FLAME = {
+  lit: require("../../../assets/art/flame/flame-lit.png"),
+  extend: require("../../../assets/art/flame/flame-extend.png"),
+  out: require("../../../assets/art/flame/flame-out.png"),
+} as const;
+
+/** Icons for the parent report (192px). */
+export const PARENT_ICONS = {
+  progress: require("../../../assets/art/icons/parent-progress.png"),
+  time: require("../../../assets/art/icons/parent-time.png"),
+  calendar: require("../../../assets/art/icons/parent-streak-calendar.png"),
+  words: require("../../../assets/art/icons/parent-words-learned.png"),
+  pronunciation: require("../../../assets/art/icons/parent-pronunciation.png"),
+  child: require("../../../assets/art/icons/parent-child.png"),
+  lock: require("../../../assets/art/icons/parent-lock.png"),
+  report: require("../../../assets/art/icons/parent-report.png"),
+  bell: require("../../../assets/art/icons/parent-bell.png"),
+} as const;
+
+/** Scene art for the two books that have no lessons yet (shown when the child taps them). */
+export const SCENES = {
+  5: require("../../../assets/art/scenes/scene-book5.png"),
+  6: require("../../../assets/art/scenes/scene-book6.png"),
 } as const;
 
 /** Stills of the two newest animations, shown while the animation file is still decoding. */
@@ -141,5 +174,9 @@ export const SFX = {
   correct: require("../../../assets/audio/sfx/correct.mp3"),
   finished: require("../../../assets/audio/sfx/lesson-finished.mp3"),
   medal: require("../../../assets/audio/sfx/medal-earned.mp3"),
+  wrong: require("../../../assets/audio/sfx/wrong.mp3"),
+  tap: require("../../../assets/audio/sfx/tap.mp3"),
+  streakLit: require("../../../assets/audio/sfx/streak-lit.mp3"),
+  streakLost: require("../../../assets/audio/sfx/streak-lost.mp3"),
 } as const;
 export type SfxName = keyof typeof SFX;

@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { colors } from "../../theme/colors";
 import { font } from "../../theme/fonts";
 import BookCard from "./BookCard";
+import SoonSheet from "./SoonSheet";
 import type { BookView } from "./books";
 
 type Props = { books: readonly BookView[]; onOpen: (book: BookView) => void };
@@ -11,6 +12,7 @@ type Props = { books: readonly BookView[]; onOpen: (book: BookView) => void };
 export default function Shelf({ books, onOpen }: Props) {
   const [shake, setShake] = useState<{ id: string; n: number }>({ id: "", n: 0 });
   const [hint, setHint] = useState<string | null>(null);
+  const [soon, setSoon] = useState<BookView | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -28,8 +30,7 @@ export default function Shelf({ books, onOpen }: Props) {
 
   const press = (book: BookView, index: number) => {
     if (book.status === "soon") {
-      setShake((current) => ({ id: book.id, n: current.n + 1 }));
-      say(`Malapit na ang ${book.title}: ${book.subtitle}!`);
+      setSoon(book);
       return;
     }
     if (book.status !== "locked") {
@@ -55,6 +56,7 @@ export default function Shelf({ books, onOpen }: Props) {
           />
         ))}
       </ScrollView>
+      {soon ? <SoonSheet book={soon} onClose={() => setSoon(null)} /> : null}
       {hint ? (
         <View style={styles.hint}>
           <Text style={styles.hintText}>{hint}</Text>

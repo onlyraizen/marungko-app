@@ -4,8 +4,8 @@ import { AccessibilityInfo, StyleSheet, View } from "react-native";
 import { useAppStore } from "../../store/useAppStore";
 import { TRANSITIONS } from "../art/assets";
 
-/** pond: tide over the screen (child chosen) · book: the book opens and dives into its page · burst: lesson start. */
-export type Scene = "pond" | "book" | "burst";
+/** pond: tide over the screen (child chosen) · book: the book opens and dives into its page · burst: lesson start · iris: a lily pad grows and holds, handing over to the book ceremony. */
+export type Scene = "pond" | "book" | "burst" | "iris";
 
 /**
  * Milliseconds from the first frame: `cover` is when the animation hides the whole screen (swap what is
@@ -15,6 +15,8 @@ const TIMING: Record<Scene, { cover: number; end: number }> = {
   pond: { cover: 700, end: 1560 },
   book: { cover: 1200, end: 1520 },
   burst: { cover: 950, end: 1310 },
+  // The pad grows over 0.6 s and stays; the ceremony underneath starts on the same green with the lotus.
+  iris: { cover: 580, end: 780 },
 };
 
 type Play = (scene: Scene, onCovered: () => void) => void;

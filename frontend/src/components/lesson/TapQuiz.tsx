@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { playSfx } from "../../hooks/useSfx";
 import { ScrollView, Share, StyleSheet, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { TapQuestion } from "../../content/quiz";
@@ -127,7 +128,10 @@ export default function TapQuiz(props: Props) {
                   label={tile.label}
                   state={tileState(tile.label, i)}
                   disabled={checked !== null}
-                  onPress={() => setPlaced((current) => current.filter((x) => x !== id))}
+                  onPress={() => {
+                    void playSfx("tap", 0.5);
+                    setPlaced((current) => current.filter((x) => x !== id));
+                  }}
                 />
               );
             })}
@@ -144,7 +148,10 @@ export default function TapQuiz(props: Props) {
                 size="bank"
                 label={tile.label}
                 disabled={checked !== null}
-                onPress={() => setPlaced((current) => [...current, tile.id])}
+                onPress={() => {
+                  void playSfx("tap", 0.5);
+                  setPlaced((current) => [...current, tile.id]);
+                }}
               />
             ),
           )}

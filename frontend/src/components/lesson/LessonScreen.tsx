@@ -20,7 +20,7 @@ import RepeatView from "./RepeatView";
 import TapQuiz from "./TapQuiz";
 
 /** What the end of a lesson shows: the saved XP and streak, and any medals this lesson earned. */
-export type LessonSummary = CompleteResult & { medals: string[] };
+export type LessonSummary = CompleteResult & { medals: string[]; streakUp: boolean };
 
 type Props = {
   title: string;
@@ -141,7 +141,9 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
       const timer = setTimeout(() => guide.say(praise), 380);
       return () => clearTimeout(timer);
     }
-    guide.say(FEEDBACK[result.kind].voice);
+    void playSfx("wrong", 0.6);
+    const timer = setTimeout(() => guide.say(FEEDBACK[result.kind].voice), 520);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, guide.say]);
 
@@ -214,6 +216,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
             setEarned((n) => n + 1);
             setCombo((n) => n + 1);
           } else {
+            if (!skipped) void playSfx("wrong", 0.6);
             setCombo(0);
           }
           onQuizAnswer?.(word, ok, heard, skipped);
@@ -244,7 +247,17 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
 
   if (practiceDone || target === undefined) return <View style={styles.root} />;
 
-  const pose: Pose = result ? POSE[result.kind] : micBlocked ? "micBlocked" : "rest";
+  // Capi covers his ears when he heard nothing (a noisy room or a quiet child), and looks for the microphone if the phone has none.
+  const micMissing = error !== null && !micBlocked && /no (audio )?(input|microphone)|input device|audio source|record(er)? (is )?(not|un)available/i.test(error);
+  const pose: Pose = result
+    ? result.kind !== "correct" && result.heard === ""
+      ? "tooNoisy"
+      : POSE[result.kind]
+    : micBlocked
+      ? "micBlocked"
+      : micMissing
+        ? "noMic"
+        : "rest";
   const sheetUp = result !== null && !isListening;
   const parts = syllabify(target);
   const slash = parts.map((part) => `/${part}/`).join(" ... ");

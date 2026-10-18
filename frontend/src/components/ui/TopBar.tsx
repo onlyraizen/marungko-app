@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radius } from "../../theme/colors";
 import { font } from "../../theme/fonts";
 import { Image } from "expo-image";
-import { AVATARS, type AvatarId } from "../art/assets";
+import { AVATARS, FLAME, type AvatarId } from "../art/assets";
 import { FlameIcon, YuzuIcon } from "./Icons";
 
 type Props = { name: string; streak: number; yuzu: number; avatar: AvatarId; onProfile: () => void };
@@ -31,7 +31,9 @@ export default function TopBar({ name, streak, yuzu, avatar, onProfile }: Props)
         </Text>
       </Pressable>
       <View style={styles.right}>
-        <Pill icon={<FlameIcon size={20} />} value={streak} label="Araw na magkakasunod" />
+        <Pill
+          icon={streak > 0 ? <Image source={FLAME.lit} autoplay contentFit="contain" style={styles.flame} /> : <FlameIcon size={20} />}
+          value={streak} label="Araw na magkakasunod" />
         <Pill icon={<YuzuIcon size={20} />} value={yuzu} label="Yuzu" />
       </View>
     </View>
@@ -65,5 +67,6 @@ const styles = StyleSheet.create({
   name: { fontFamily: font.display, fontSize: 20, lineHeight: 30, color: colors.surface, flexShrink: 1, includeFontPadding: false },
   right: { flexDirection: "row", alignItems: "center", gap: 6 },
   pill: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: 10, height: 34 },
+  flame: { width: 24, height: 24, marginLeft: -2 },
   pillValue: { fontFamily: font.bold, fontSize: 16, color: colors.ink },
 });

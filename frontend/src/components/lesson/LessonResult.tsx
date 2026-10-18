@@ -7,7 +7,7 @@ import type { useGuideAudio } from "../../hooks/useGuideAudio";
 import { playSfx } from "../../hooks/useSfx";
 import { colors } from "../../theme/colors";
 import { font } from "../../theme/fonts";
-import { ICONS, LOOPS, MEDAL_ART, POSES, type MedalId } from "../art/assets";
+import { FLAME, ICONS, LOOPS, MEDAL_ART, POSES, type MedalId } from "../art/assets";
 import Button3D from "../ui/Button3D";
 import { YuzuIcon } from "../ui/Icons";
 import type { LessonSummary } from "./LessonScreen";
@@ -48,6 +48,16 @@ export default function LessonResult({ title, practice, quiz, yuzu, review, summ
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // A longer streak gets its own sound, unless a medal is about to play one.
+  const streakUp = summary?.streakUp === true && !review;
+  const streakHeard = useRef(false);
+  useEffect(() => {
+    if (!streakUp || firstMedal !== undefined || streakHeard.current) return;
+    streakHeard.current = true;
+    const timer = setTimeout(() => void playSfx("streakLit"), 800);
+    return () => clearTimeout(timer);
+  }, [streakUp, firstMedal]);
 
   // A new medal gets its own chime when it appears.
   useEffect(() => {
@@ -90,6 +100,16 @@ export default function LessonResult({ title, practice, quiz, yuzu, review, summ
             </Text>
           </View>
         </View>
+
+        {streakUp && summary ? (
+          <View style={styles.medalCard}>
+            <Image source={FLAME.extend} autoplay contentFit="contain" style={styles.flame} />
+            <View style={styles.medalText}>
+              <Text style={styles.medalKicker}>APOY NG PAG-AARAL</Text>
+              <Text style={styles.medalName}>{summary.streak} araw na magkakasunod!</Text>
+            </View>
+          </View>
+        ) : null}
 
         {firstMedal !== undefined ? (
           <View style={styles.medalCard}>
@@ -147,6 +167,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   medal: { width: 56, height: 56 },
+  flame: { width: 64, height: 64, marginVertical: -6 },
   medalText: { flex: 1 },
   medalKicker: { fontFamily: font.bold, fontSize: 12, letterSpacing: 1.4, color: colors.muted },
   medalName: { fontFamily: font.display, fontSize: 22, lineHeight: 32, color: colors.ink, includeFontPadding: false },

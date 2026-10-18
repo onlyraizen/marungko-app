@@ -29,6 +29,9 @@ type AppState = {
   /** Short screen transitions (book opening, lesson start). Can be switched off on slow phones. */
   animations: boolean;
   setAnimations: (value: boolean) => void;
+  /** The day (YYYY-MM-DD) each child was last told their streak ended, so Capi says it only once. */
+  streakNotice: Record<string, string>;
+  setStreakNotice: (childId: string, day: string) => void;
   /** The one-tap microphone tutorial has been shown once. */
   seenMicTutorial: boolean;
   setSeenMicTutorial: (value: boolean) => void;
@@ -67,6 +70,8 @@ export const useAppStore = create<AppState>()(
           const fresh = ids.filter((id) => !have.has(id));
           return fresh.length === 0 ? state : { medals: { ...state.medals, [childId]: [...have, ...fresh] } };
         }),
+      streakNotice: {},
+      setStreakNotice: (childId, day) => set((state) => ({ streakNotice: { ...state.streakNotice, [childId]: day } })),
       animations: true,
       setAnimations: (value) => set({ animations: value }),
       seenMicTutorial: false,

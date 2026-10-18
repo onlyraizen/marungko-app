@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppStore } from "../../store/useAppStore";
 import { colors } from "../../theme/colors";
 import { font } from "../../theme/fonts";
+import { Image } from "expo-image";
+import { PARENT_ICONS } from "../art/assets";
 import { CapiPeek } from "../art/Capi";
 import Button3D from "../ui/Button3D";
 import { BackIcon, ChevronIcon, CloseIcon } from "../ui/Icons";
@@ -23,6 +25,7 @@ type Props = {
   onCheckBackend: () => void;
   onOpenLive: () => void;
   onOpenMic: () => void;
+  onOpenReport: () => void;
   onSwitchChild: () => void;
   onLogout: () => void;
   onClose: () => void;
@@ -180,7 +183,12 @@ function Page({ route, go, onTutorial, ...p }: Props & { route: Route; go: (rout
         </>
       );
     case "notif":
-      return <Text style={styles.body}>Malapit na! Dito mo maaayos ang mga paalala para hindi mawala ang streak.</Text>;
+      return (
+        <View style={styles.soon}>
+          <Image source={PARENT_ICONS.bell} contentFit="contain" style={styles.soonIcon} />
+          <Text style={styles.body}>Malapit na! Dito mo maaayos ang mga paalala para hindi mawala ang streak.</Text>
+        </View>
+      );
     case "feedback":
       return <Text style={styles.body}>Malapit na! Dito ka makakapagpadala ng puna tungkol sa Basa-Bata.</Text>;
     case "help":
@@ -202,6 +210,12 @@ function Page({ route, go, onTutorial, ...p }: Props & { route: Route; go: (rout
     case "parent":
       return (
         <>
+          <View style={styles.reportRow}>
+            <Image source={PARENT_ICONS.report} contentFit="contain" style={styles.reportIcon} />
+            <View style={styles.reportButton}>
+              <Button3D label="Ulat ng pag-unlad" tone="info" onPress={p.onOpenReport} />
+            </View>
+          </View>
           <ToggleRow
             title="Buksan lahat ng aralin"
             text="Para sa demo: bukas ang lahat ng libro at aralin kahit hindi pa natatapos ang nauna."
@@ -235,6 +249,11 @@ const PRIVACY =
 const TERMS = "Draft: Gamitin ang Basa-Bata para sa pag-aaral ng pagbasa. Susuriin muna ito ng guro at ng may-akda bago ang opisyal na paglabas.";
 
 const styles = StyleSheet.create({
+  reportRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  reportIcon: { width: 56, height: 56 },
+  reportButton: { flex: 1 },
+  soon: { alignItems: "center", gap: 10 },
+  soonIcon: { width: 96, height: 96 },
   root: { flex: 1, backgroundColor: colors.surface },
   header: {
     flexDirection: "row",
