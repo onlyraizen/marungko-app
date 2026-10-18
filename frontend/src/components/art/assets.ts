@@ -58,7 +58,6 @@ export const TRANSITIONS = {
   book: require("../../../assets/art/transitions/book-open.png"),
   burst: require("../../../assets/art/transitions/sunburst.png"),
   iris: require("../../../assets/art/transitions/iris-in.png"),
-  ceremony: require("../../../assets/art/transitions/ceremony.png"),
   ceremonyEnd: require("../../../assets/art/transitions/ceremony-end.png"),
 } as const;
 
