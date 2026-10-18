@@ -94,7 +94,7 @@ const criteria = [
 const rows = set.words
   .map(
     (entry, index) => `<tr data-i="${index}"><td><b>${entry.word}</b><br><span class="s">${entry.stress}<br>${entry.class}</span><br><span class="f">${entry.focus}</span></td>
-<td>${variants.map((v) => `<div class="v">${v.label}<br><audio controls preload="none" src="${entry.word}.${v.id}.wav"></audio></div>`).join("")}</td>
+<td>${variants.map((v) => `<div class="v">${v.label}<br><audio controls preload="none" src="${entry.word}.${v.id}.wav"></audio><label><input type="radio" name="pick-${entry.word}" value="${v.id}"> piliin</label></div>`).join("")}</td>
 <td>${criteria.map(([id, label]) => `<label>${label}<select data-w="${entry.word}" data-c="${id}"><option value=""></option>${[1, 2, 3, 4, 5].map((n) => `<option>${n}</option>`).join("")}</select></label>`).join("")}</td></tr>`,
   )
   .join("\n");
@@ -105,12 +105,15 @@ writeFileSync(
 <style>body{font:15px system-ui;margin:16px;max-width:1100px}table{border-collapse:collapse;width:100%}td{border-top:1px solid #ccc;padding:8px;vertical-align:top}
 .s{color:#a00}.f{color:#666;font-size:12px}.v{display:inline-block;margin:0 8px 6px 0;font-size:12px}label{display:inline-block;margin:2px 8px 2px 0;font-size:12px}
 #r{position:sticky;top:0;background:#fff;padding:8px;border-bottom:2px solid #333;font-weight:600}.bad{background:#fde}</style>
-<h1>Voice test (${voice})</h1><p>Rate each word 1 (bad) to 5 (great). A teacher must confirm the stress marks in red first. Scores save in this browser.</p>
-<div id="r"></div><table>${rows}</table><p><button id="csv">Download ratings (CSV)</button></p>
+<h1>Voice test (${voice})</h1><p>Pakinggan ang bawat bersyon at i-tick ang <b>piliin</b> sa may tamang intonation at diin. Ang ratings (1 hanggang 5) ay optional. Sine-save ito sa browser na ito. Sa dulo, pindutin ang <b>Download picks</b>.</p>
+<div id="r"></div><table>${rows}</table><p><button id="picks">Download picks (voice-picks.txt)</button> <button id="csv">Download ratings (CSV)</button></p>
 <script>
 const KEY="voice-test-${voice}";let data=JSON.parse(localStorage.getItem(KEY)||"{}");
 const sels=[...document.querySelectorAll("select")];
 sels.forEach(s=>{s.value=(data[s.dataset.w]||{})[s.dataset.c]||"";s.onchange=()=>{(data[s.dataset.w]=data[s.dataset.w]||{})[s.dataset.c]=s.value;localStorage.setItem(KEY,JSON.stringify(data));check()}});
+document.querySelectorAll("input[type=radio]").forEach(r=>{const w=r.name.slice(5);r.checked=(data[w]||{}).pick===r.value;r.onchange=()=>{(data[w]=data[w]||{}).pick=r.value;localStorage.setItem(KEY,JSON.stringify(data))}});
+document.getElementById("picks").onclick=()=>{let t="";for(const w in data)if(data[w].pick)t+=w+"="+data[w].pick+"\\n";
+const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/plain"}));a.download="voice-picks.txt";a.click()};
 function check(){let rated=0,fail=0;document.querySelectorAll("tr[data-i]").forEach(tr=>{const w=tr.querySelector("b").textContent,d=data[w]||{};
 const core=["stress","clarity","uh"].map(c=>Number(d[c]||0));const done=core.every(Boolean);if(done)rated++;const bad=done&&core.some(n=>n<=2);if(bad)fail++;tr.classList.toggle("bad",bad)});
 const limit=Math.ceil(document.querySelectorAll("tr[data-i]").length*0.1);
