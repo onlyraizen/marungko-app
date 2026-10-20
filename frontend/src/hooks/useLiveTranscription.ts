@@ -9,9 +9,11 @@ const STT_MODEL = "stt-rt-v5";
 // Hands-free stopping. Soniox sends an "<end>" token when it decides the speaker is done.
 // If it ends too early (cuts the child off), lower the level to 0 or raise the delay.
 // If it feels slow, raise the level (max 3) or lower the delay (min 500).
-const ENDPOINT_LATENCY_LEVEL = 2; // 0 default, 1 to 3 faster
+// Children in Grades 1 to 3 read slowly and pause between sounds, so the endpoint is patient. A correct answer is
+// still accepted quickly: LessonScreen stops the stream 450 ms after the text already matches (EARLY_ACCEPT_MS).
+const ENDPOINT_LATENCY_LEVEL = 2; // 0 default, 1 to 3 faster (Soniox docs: higher can cut speech into more segments)
 const MAX_ENDPOINT_DELAY_MS = 1000; // 500 to 3000; Soniox default is 2000
-const ENDPOINT_SENSITIVITY = 0.3; // -1 to 1; higher means it ends sooner
+const ENDPOINT_SENSITIVITY = 0; // -1 to 1; higher means it ends sooner. Do not go negative with a level above 0.
 // Safety nets, because "<end>" never comes if the child says nothing.
 const NO_SPEECH_MS = 7000;
 const MAX_LISTEN_MS = 12000;
@@ -86,6 +88,7 @@ export function useLiveTranscription() {
   const preparedKeyRef = useRef<{ apiKey: string; at: number } | null>(null);
   const noSpeechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const finishAfterEndpointRef = useRef<() => void>(() => undefined);
 
   const { isStreaming, stream } = useAudioStream({
     channels: 1,
@@ -179,6 +182,11 @@ export function useLiveTranscription() {
       setTimeout(() => socket.close(), 800);
     }
   };
+
+  // finishNow() is a stable function that always runs the latest version of finishAfterEndpoint.
+  useEffect(() => {
+    finishAfterEndpointRef.current = finishAfterEndpoint;
+  });
 
   const armTimers = () => {
     clearTimers();
@@ -351,6 +359,12 @@ export function useLiveTranscription() {
     }
   };
 
+  /** Ends the turn right now with whatever has been heard so far (used when the words already match). */
+  const finishNow = useCallback(() => {
+    if (stoppedRef.current) return;
+    finishAfterEndpointRef.current();
+  }, []);
+
   return {
     status,
     finalText,
@@ -364,5 +378,6 @@ export function useLiveTranscription() {
     prepare,
     start,
     stop,
+    finishNow,
   };
 }

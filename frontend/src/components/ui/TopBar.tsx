@@ -1,36 +1,40 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { book } from "../../theme/book";
 import { colors, radius } from "../../theme/colors";
-import CapybaraHead from "../art/CapybaraHead";
+import { font } from "../../theme/fonts";
+import { Image } from "expo-image";
+import { AVATARS, FLAME, type AvatarId } from "../art/assets";
+import { FlameIcon, YuzuIcon } from "./Icons";
 
-type Props = { name: string; streak: number; xp: number; onPress: () => void };
+type Props = { name: string; streak: number; yuzu: number; avatar: AvatarId; onProfile: () => void };
 
-function Pill({ icon, value, label }: { icon: string; value: number; label: string }) {
+function Pill({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) {
   return (
     <View style={styles.pill} accessibilityLabel={`${label}: ${value}`}>
-      <Text style={styles.pillIcon}>{icon}</Text>
+      {icon}
       <Text style={styles.pillValue}>{value}</Text>
     </View>
   );
 }
 
-/** A wooden shelf: the child on the left (opens the menu), streak and XP on the right. */
-export default function TopBar({ name, streak, xp, onPress }: Props) {
+/** The brown shelf along the top: the child, streak and yuzu. */
+export default function TopBar({ name, streak, yuzu, avatar, onProfile }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.bar, { paddingTop: insets.top + 8 }]}>
-      <Pressable onPress={onPress} style={styles.who} accessibilityRole="button" accessibilityLabel="Menu">
+      <Pressable onPress={onProfile} style={styles.who} accessibilityRole="button" accessibilityLabel="Profile">
         <View style={styles.avatar}>
-          <CapybaraHead size={42} blink={false} />
+          <Image source={AVATARS[avatar]} contentFit="cover" style={styles.avatarImage} />
         </View>
         <Text style={styles.name} numberOfLines={1}>
           {name}
         </Text>
       </Pressable>
-      <View style={styles.pills}>
-        <Pill icon="🔥" value={streak} label="Araw na magkakasunod" />
-        <Pill icon="⭐" value={xp} label="XP" />
+      <View style={styles.right}>
+        <Pill
+          icon={streak > 0 ? <Image source={FLAME.lit} autoplay contentFit="contain" style={styles.flame} /> : <FlameIcon size={20} />}
+          value={streak} label="Araw na magkakasunod" />
+        <Pill icon={<YuzuIcon size={20} />} value={yuzu} label="Yuzu" />
       </View>
     </View>
   );
@@ -42,34 +46,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 14,
-    paddingBottom: 10,
-    backgroundColor: book.cover,
-    borderBottomWidth: 4,
-    borderBottomColor: book.coverDark,
+    paddingBottom: 12,
+    backgroundColor: colors.brown,
+    borderBottomWidth: 5,
+    borderBottomColor: "#4E2D13",
   },
-  who: { flexDirection: "row", alignItems: "center", gap: 10, flexShrink: 1 },
+  who: { flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 },
   avatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: colors.surface,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.brownLight,
     borderWidth: 2,
-    borderColor: book.coverDark,
+    borderColor: "#4E2D13",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
-  name: { fontSize: 18, fontWeight: "800", color: book.paper, flexShrink: 1 },
-  pills: { flexDirection: "row", gap: 8 },
-  pill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: colors.surface,
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  pillIcon: { fontSize: 16 },
-  pillValue: { fontSize: 16, fontWeight: "800", color: book.ink },
+  avatarImage: { width: 42, height: 42 },
+  name: { fontFamily: font.display, fontSize: 20, lineHeight: 30, color: colors.surface, flexShrink: 1, includeFontPadding: false },
+  right: { flexDirection: "row", alignItems: "center", gap: 6 },
+  pill: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: 10, height: 34 },
+  flame: { width: 24, height: 24, marginLeft: -2 },
+  pillValue: { fontFamily: font.bold, fontSize: 16, color: colors.ink },
 });

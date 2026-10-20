@@ -8,9 +8,11 @@ import { UnitSchema, audioKey } from "../packages/shared/dist/index.js";
  *
  *   pnpm content:audio                        dry run: counts items, estimates cost, spends nothing
  *   pnpm content:audio -- --yes               generate every missing file
- *   pnpm content:audio -- --yes --syllables   include the syllables too
+ *   pnpm content:audio -- --yes --syllables   include the letter sounds and syllables too (sounds need an entry in
+ *                                             content/tts-respell.json, or record them yourself: pnpm content:import-voice)
  *   pnpm content:audio -- --yes --only mama,masa --voice Victoria
  *                                             re-take specific words with another voice
+ *   add --speed 0.9 to talk slower (Soniox allows 0.7 to 1.3; keep it close to 1)
  *   add --out-dir <folder> to write trial files somewhere else (nothing in the app changes)
  */
 
@@ -35,13 +37,29 @@ const option = (name: string): string | undefined => {
 };
 
 const voice = option("voice") ?? process.env.SONIOX_TTS_VOICE ?? "Maya";
+const speedOption = option("speed");
+const speed = speedOption === undefined ? undefined : Number(speedOption);
+if (speed !== undefined && !(speed >= 0.7 && speed <= 1.3)) throw new Error("--speed must be between 0.7 and 1.3.");
 const outDirOption = option("out-dir");
 const bundleMode = outDirOption === undefined;
 const audioDir = outDirOption ?? join(root, "frontend", "assets", "audio", "words");
 const metaPath = join(root, "content", "audio-meta.json");
 const manifestPath = join(root, "frontend", "src", "audio", "manifest.ts");
 
-type Item = { key: string; text: string; kind: "word" | "syllable" | "phrase" };
+type Item = { key: string; text: string; kind: "word" | "syllable" | "sound" | "phrase" };
+
+// What to actually send to Soniox for an item, when the plain spelling is read badly (see the fix ladder in
+// docs/VOICE.md). Keys are audio keys: { "saging": "sa, ging" }. Keys starting with "_" are notes.
+const respellPath = join(root, "content", "tts-respell.json");
+const respell: Record<string, string> = existsSync(respellPath)
+  ? (JSON.parse(readFileSync(respellPath, "utf8")) as Record<string, string>)
+  : {};
+const spoken = (item: Item): string | null => {
+  const custom = respell[item.key];
+  if (custom !== undefined && !item.key.startsWith("_")) return custom;
+  // A bare letter would be read by its NAME ("em"), never its sound. Do not guess: record it or add a respelling.
+  return item.kind === "sound" ? null : item.text;
+};
 const items = new Map<string, Item>();
 
 function add(text: string, kind: Item["kind"]): void {
@@ -58,7 +76,10 @@ const unitsDir = join(root, "content", "units");
 for (const file of readdirSync(unitsDir).filter((name) => name.endsWith(".json")).sort()) {
   const unit = UnitSchema.parse(JSON.parse(readFileSync(join(unitsDir, file), "utf8")));
   for (const word of unit.words) add(word, "word");
-  if (flag("syllables")) for (const syllable of unit.syllables) add(syllable, "syllable");
+  if (flag("syllables")) {
+    for (const syllable of unit.syllables) add(syllable, "syllable");
+    for (const sound of unit.sounds) add(sound, "sound");
+  }
 }
 const phrases = (JSON.parse(readFileSync(join(root, "content", "phrases.json"), "utf8")) as { phrases: string[] })
   .phrases;
@@ -74,7 +95,13 @@ if (only !== undefined) {
 
 const fileFor = (key: string): string => join(audioDir, `${key}.wav`);
 const wanted = [...items.values()].filter((item) => only === undefined || only.includes(item.key));
-const todo = wanted.filter((item) => only !== undefined || flag("force") || !existsSync(fileFor(item.key)));
+const todo = wanted
+  .filter((item) => only !== undefined || flag("force") || !existsSync(fileFor(item.key)))
+  .filter((item) => {
+    if (spoken(item) !== null) return true;
+    console.warn(`SKIPPED sound "${item.text}": no respelling in content/tts-respell.json. Record it with your own voice.`);
+    return false;
+  });
 const characters = todo.reduce((sum, item) => sum + item.text.length, 0);
 const estimatedUsd =
   (characters * INPUT_TOKENS_PER_CHAR * INPUT_USD_PER_MILLION) / 1e6 +
@@ -104,6 +131,7 @@ async function synthesize(text: string, apiKey: string): Promise<Buffer> {
         audio_format: "wav",
         text,
         sample_rate: SAMPLE_RATE,
+        ...(speed !== undefined ? { speed } : {}),
       }),
       signal: AbortSignal.timeout(20_000),
     });
@@ -136,9 +164,9 @@ if (!flag("manifest-only") && todo.length > 0) {
 
   for (const [index, item] of todo.entries()) {
     try {
-      writeFileSync(fileFor(item.key), await synthesize(item.text, apiKey));
+      writeFileSync(fileFor(item.key), await synthesize(spoken(item) ?? item.text, apiKey));
       meta[item.key] = {
-        text: item.text,
+        text: spoken(item) ?? item.text,
         voice,
         model: MODEL,
         language: LANGUAGE,
