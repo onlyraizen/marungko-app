@@ -1,9 +1,10 @@
 import { FACTS, audioKey, matchUtterance, type MatchResult } from "@marungko/shared";
+import { acceptedFor } from "../../content/accepted";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { buildTapQuiz } from "../../content/quiz";
 import { syllabify } from "../../content/syllables";
-import { useGuideAudio } from "../../hooks/useGuideAudio";
+import { invalidatePlaybackMode, useGuideAudio } from "../../hooks/useGuideAudio";
 import { useLiveTranscription } from "../../hooks/useLiveTranscription";
 import { playSfx } from "../../hooks/useSfx";
 import type { CompleteResult } from "../../services/progress";
@@ -97,11 +98,11 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
     if (phase === "practice" && !isListening && !practiceDone) void prepare();
   }, [phase, index, result, isListening, practiceDone, prepare]);
 
-  // Capi says each new item (and its example word). The microphone stays closed while he speaks.
+  // Capi says each new item, and only the item: the example word is shown with its picture, never spoken.
+  // The microphone can be tapped at any time; it simply stops Capi.
   useEffect(() => {
     if (phase !== "practice" || practiceDone || target === undefined || tutorial) return;
-    const lines = example ? [target, example.word] : [target];
-    const timer = setTimeout(() => guide.sayAll(lines), 450);
+    const timer = setTimeout(() => guide.sayAll([target]), 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, index, practiceDone, target, tutorial, guide.sayAll]);
@@ -110,7 +111,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
     if (finished && awaitingResult.current && target !== undefined) {
       awaitingResult.current = false;
       const heardText = `${finalText}${partialText}`;
-      const next = matchUtterance(heardText, target);
+      const next = matchUtterance(heardText, target, acceptedFor(target));
       setResult(next);
       if (next.kind === "correct") {
         if (!correctItems.current.has(target)) setEarned((n) => n + 1);
@@ -128,7 +129,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
   // The moment the words match, accept them: no need to wait for the speech service to notice a pause.
   useEffect(() => {
     if (!isListening || !heardSpeech || target === undefined || phase !== "practice") return;
-    if (matchUtterance(`${finalText}${partialText}`, target).kind !== "correct") return;
+    if (matchUtterance(`${finalText}${partialText}`, target, acceptedFor(target)).kind !== "correct") return;
     const timer = setTimeout(finishNow, EARLY_ACCEPT_MS);
     return () => clearTimeout(timer);
   }, [isListening, heardSpeech, finalText, partialText, target, phase, finishNow]);
@@ -170,6 +171,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
 
   const onMic = () => {
     guide.stop();
+    invalidatePlaybackMode();
     setResult(null);
     setFlagged(false);
     awaitingResult.current = true;
@@ -325,12 +327,12 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
       pose={pose}
       verdict={sheetUp && result ? result.kind : null}
       micState={micBlocked ? "blocked" : isListening ? "live" : "ready"}
-      micWaiting={guide.speaking || busy}
+      micWaiting={busy}
       slow={slow}
-      canSpeak={guide.has(target) && !guide.speaking}
+      canSpeak={guide.has(target)}
       onToggleSlow={toggleSlow}
-      onSpeaker={() => guide.sayAll(example ? [target, example.word] : [target])}
-      onMic={isListening ? stop : guide.speaking || busy ? () => undefined : onMic}
+      onSpeaker={() => guide.sayAll([target])}
+      onMic={isListening ? stop : busy ? () => undefined : onMic}
       onSkip={onSkip}
       onClose={close}
       sheet={sheet}

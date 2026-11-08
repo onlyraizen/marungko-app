@@ -6,18 +6,33 @@ import { AUDIO } from "../audio/manifest";
 /** How fast the guide talks in slow mode. 1 is the recorded speed. */
 export const SLOW_RATE = 0.7;
 
+/** How long a playback mode switch stays valid. Switching again right away only delays the first sound. */
+const MODE_FRESH_MS = 2500;
+/** If a clip has not started this long after play(), press play once more (what a second tap used to do). */
+const NUDGE_MS = 380;
+/** The longest to wait for a clip to load before playing anyway. */
+const LOAD_WAIT_MS = 700;
+let modeSetAt = 0;
+
+/** Call when the microphone opens: it changes the phone's audio mode, so the next clip must set playback mode again. */
+export function invalidatePlaybackMode(): void {
+  modeSetAt = 0;
+}
+
 /**
  * Plays the pre-generated guide voice. Every file is bundled in the app; nothing is fetched.
  * With `slow` on, every clip plays slower (pitch is kept), so a child can hear each sound.
  */
 export function useGuideAudio(slow = false) {
-  const player = useAudioPlayer(null);
+  // 100 ms status updates: the default 500 ms made the end of every clip, and so the mic, up to half a second late.
+  const player = useAudioPlayer(null, { updateInterval: 100 });
   const status = useAudioPlayerStatus(player);
   const [speaking, setSpeaking] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ticket = useRef(0);
   const queue = useRef<number[]>([]);
   const slowRef = useRef(slow);
+  const clipSeq = useRef(0);
   useEffect(() => {
     slowRef.current = slow;
   }, [slow]);
@@ -32,11 +47,16 @@ export function useGuideAudio(slow = false) {
   /** Plays one clip. `mine` says which request this belongs to, so a stopped queue stays stopped. */
   const playClip = useCallback(
     async (source: number, mine: number) => {
-      try {
-        // Plain playback mode: iPhones play louder than in record-and-play mode.
-        await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
-      } catch {
-        // Play anyway.
+      clipSeq.current += 1;
+      const id = clipSeq.current;
+      if (Date.now() - modeSetAt > MODE_FRESH_MS) {
+        try {
+          // Plain playback mode: iPhones play louder than in record-and-play mode.
+          await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+          modeSetAt = Date.now();
+        } catch {
+          // Play anyway.
+        }
       }
       if (mine !== ticket.current) return; // stopped or replaced while switching modes
       player.volume = 1;
@@ -46,7 +66,18 @@ export function useGuideAudio(slow = false) {
       } catch {
         // Keep the normal speed if this phone refuses.
       }
+      // Wait for the file to be ready: playing a clip that is still loading was one cause of "nothing on the first tap".
+      const waitUntil = Date.now() + LOAD_WAIT_MS;
+      while (!player.isLoaded && Date.now() < waitUntil) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        if (mine !== ticket.current) return;
+      }
       player.play();
+      setTimeout(() => {
+        if (mine !== ticket.current || id !== clipSeq.current || player.playing) return;
+        if (__DEV__) console.warn("[guide] clip had not started; pressing play again");
+        player.play();
+      }, NUDGE_MS);
     },
     [player],
   );
@@ -72,7 +103,10 @@ export function useGuideAudio(slow = false) {
   }, [playClip]);
 
   useEffect(() => {
-    if (status.didJustFinish) playNext();
+    if (status.didJustFinish) {
+      clipSeq.current += 1; // the clip is over: cancel its "press play again" check
+      playNext();
+    }
   }, [status.didJustFinish, playNext]);
 
   useEffect(() => {
