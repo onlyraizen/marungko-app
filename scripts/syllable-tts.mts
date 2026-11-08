@@ -21,6 +21,9 @@ import { cut, encodeWav, measure, readWav, sounds } from "./lib/audio.mts";
  *   pnpm content:syllable-tts                       dry run: counts requests, spends nothing
  *   pnpm content:syllable-tts -- --yes              generate into ~/syllable-tts, then open index.html there
  *   add --only ma,sa to do some syllables; --voice Maya; --out-dir <folder>
+ *   add --try meh,mé to also make versions spelled another way (for a syllable that has no good version yet).
+ *   With --only the page is written as index-extra.html and downloads syllable-picks-extra.txt, so the first
+ *   page and its picks are not touched.
  *
  * Then, with the picks file the page downloads:
  *   pnpm content:apply-picks -- --picks ~/Downloads/syllable-picks.txt --from ~/syllable-tts --yes
@@ -63,6 +66,21 @@ const variants: Variant[] = [
   { id: "commas", label: "said 3 times, middle kept", text: (s) => `${s}, ${s}, ${s}.`, middleOf: 3 },
   { id: "dots", label: "3 times with pauses, middle kept", text: (s) => `${s}... ${s}... ${s}.`, middleOf: 3 },
 ];
+
+// Other spellings to try, for the syllables in --only. The id must be letters and digits only (apply-picks reads it).
+const tries = (option("try") ?? "").split(",").map((text) => text.trim()).filter((text) => text !== "");
+const idPart = (text: string): string => text.normalize("NFD").replace(/[^a-z0-9]/gi, "").toLowerCase();
+for (const spelling of tries) {
+  const id = idPart(spelling);
+  if (id === "") continue;
+  variants.push(
+    { id: `p${id}`, label: `spelled "${spelling}"`, text: () => `${spelling}.` },
+    { id: `s${id}`, label: `spelled "${spelling}", slower`, text: () => `${spelling}.`, speed: 0.85 },
+    { id: `c${id}`, label: `spelled "${spelling}", 3 times, middle kept`, text: () => `${spelling}, ${spelling}, ${spelling}.`, middleOf: 3 },
+  );
+}
+const extra = tries.length > 0 || only !== undefined;
+if (tries.length > 0 && only === undefined) throw new Error("--try needs --only (for example --only me --try meh,mé).");
 
 console.log(`Voice ${voice}, model ${MODEL}, language ${LANGUAGE}. ${list.length} syllables x ${variants.length} versions = ${list.length * variants.length} requests (a few characters each: a few cents at most).`);
 if (!flag("yes")) {
@@ -153,7 +171,7 @@ for (const entry of list) {
     }
   }
 }
-writeFileSync(join(outDir, "report.json"), JSON.stringify(results, null, 2));
+writeFileSync(join(outDir, extra ? "report-extra.json" : "report.json"), JSON.stringify(results, null, 2));
 
 const esc = (text: string): string => text.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 const rowHtml = list
@@ -176,26 +194,28 @@ const rowHtml = list
   })
   .join("\n");
 
+const pageName = extra ? "index-extra.html" : "index.html";
+const picksName = extra ? "syllable-picks-extra.txt" : "syllable-picks.txt";
 writeFileSync(
-  join(outDir, "index.html"),
+  join(outDir, pageName),
   `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Syllable picks</title>
 <style>:root{color-scheme:light dark}body{font:15px system-ui;margin:16px;max-width:980px}section{border-top:1px solid #8885;padding:10px 0}h3{margin:0}small{font-weight:400;color:#888}
 .v{display:inline-block;vertical-align:top;margin:6px 10px 6px 0;padding:8px;border:1px solid #8885;border-radius:8px;max-width:280px;font-size:13px}.v.x{opacity:.8}.n{color:#a60;margin:4px 0}
 .t{display:inline-block;font-size:12px;background:#fe93;border-radius:99px;padding:1px 8px;margin:2px 4px 2px 0}.t.g{background:#4a82}#bar{position:sticky;top:0;background:Canvas;padding:8px 0;border-bottom:2px solid #888;z-index:3}</style>
 <h1>Syllable picks (${esc(voice)})</h1>
 <p>Pakinggan ang bawat bersyon. I-tick ang <b>piliin</b> sa may tamang bigkas at intonation (malinis ang patinig, walang dagdag na "uh", bahagyang bumababa sa dulo). Kung wala, piliin ang "ire-record ko". Hindi ito nakikinig para sa iyo: ang mga numero ay sukat lang.</p>
-<div id="bar"><span id="count"></span> <button id="save">Download picks (syllable-picks.txt)</button></div>
+<div id="bar"><span id="count"></span> <button id="save">Download picks (${picksName})</button></div>
 ${rowHtml}
 <script>
-const KEY="syllable-picks-${esc(voice)}";let data=JSON.parse(localStorage.getItem(KEY)||"{}");
+const KEY="syllable-picks-${esc(voice)}${extra ? "-extra" : ""}";let data=JSON.parse(localStorage.getItem(KEY)||"{}");
 const secs=[...document.querySelectorAll("section")];
 function count(){document.getElementById("count").textContent=Object.keys(data).length+" of "+secs.length+" chosen   "}
 document.querySelectorAll("input[type=radio]").forEach(r=>{const s=r.name.slice(2);r.checked=data[s]===r.value;r.onchange=()=>{data[s]=r.value;localStorage.setItem(KEY,JSON.stringify(data));count()}});
 count();
 document.getElementById("save").onclick=()=>{let t="";for(const s in data)t+=data[s]==="record"?"# "+s+" needs recording\\n":s+"="+data[s]+"\\n";
-const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/plain"}));a.download="syllable-picks.txt";a.click()};
+const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/plain"}));a.download="${picksName}";a.click()};
 </script>`,
 );
 const clean = results.filter((r) => r.ok).length;
-console.log(`\n${results.length} versions made, ${clean} pass the measurements. Open ${join(outDir, "index.html")} in Chrome and pick by ear.`);
+console.log(`\n${results.length} versions made, ${clean} pass the measurements. Open ${join(outDir, pageName)} in Chrome and pick by ear.`);
 process.exit(failures > 0 ? 1 : 0);
