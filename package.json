@@ -36,6 +36,7 @@
     "content:apply-picks": "tsx scripts/apply-picks.mts",
     "content:audio-report": "tsx scripts/audio-report.mts",
     "content:syllable-check": "tsx scripts/syllable-check.mts",
+    "content:syllable-tts": "tsx --env-file=backend/.env scripts/syllable-tts.mts",
     "content:build-recorder": "tsx scripts/build-recorder.mts",
     "voice:test": "tsx --env-file=backend/.env scripts/voice-test.mts"
   },

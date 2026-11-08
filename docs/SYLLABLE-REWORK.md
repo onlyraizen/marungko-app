@@ -2,7 +2,13 @@
 
 Written 2026-11-09. Reported problem: a clip such as "ma" says "mabuda" (more than the syllable), and the same happens on other two-letter syllables. I cannot hear audio, so everything below about how a clip *sounds* is for a Filipino teacher to judge; what I could measure is measured by `pnpm content:syllable-check`.
 
-## Plan and recommended route
+## Update 2026-11-09 (decision): computer voice first, record only what fails
+
+You decided to keep Soniox TTS for the syllables and pick the right version by ear. That is Route B below, now with a tool built for it (`pnpm content:syllable-tts`). It gives the engine more than two letters to hold on to, cuts out only the syllable, and shows several versions per syllable so a Filipino teacher can pick the one with the right sound. **It cannot promise that every syllable will have a good version**: the engine has no documented control over vowel purity, the "uh" after a stop, or intonation. Every syllable where no version is right goes to the recorder page (Route A). Read the rest with that in mind: Route A below is the fallback for those syllables, not the whole plan.
+
+Steps: section 3, "Route B: computer voice, picked by ear".
+
+## Plan and recommended route (original recommendation)
 
 **Route A for all 41 syllables: record a real human voice.** Soniox TTS is kept for words and phrases only.
 
@@ -174,7 +180,28 @@ pnpm content:audio -- --manifest-only --syllables
 pnpm content:syllable-check                           # must say every clip is human, 0 need attention
 ```
 
-### Route B (Soniox TTS), only as a test or a stopgap
+### Route B: computer voice, picked by ear (chosen)
+
+```
+git pull origin redesign-basa-bata
+pnpm content:syllable-tts                     # dry run: counts the requests
+pnpm content:syllable-tts -- --yes            # makes 4 versions of each of the 41 syllables in ~/syllable-tts
+# open ~/syllable-tts/index.html in Chrome. For each syllable tick "piliin" on the best version,
+# or "ire-record ko" if none is right. Press "Download picks".
+pnpm content:syllable-check -- --quarantine --yes     # old computer-voice syllable clips move aside
+pnpm content:apply-picks -- --picks ~/Downloads/syllable-picks.txt --from ~/syllable-tts --yes
+pnpm content:normalize-audio
+pnpm content:audio -- --manifest-only --syllables
+pnpm content:syllable-check                   # every clip must say TTS-picked or human
+```
+
+The four versions: `plain` ("ma."), `slow` (same at speed 0.85), `commas` ("ma, ma, ma." and the MIDDLE sound is kept) and `dots` ("ma... ma... ma." and the middle is kept). Each is cut with about 40 ms before and 60 ms after, faded at the cut, and set to one loudness. The page orders the versions that pass the measurements first and marks the others (too long, extra sounds, no clear middle sound, pitch rising at the end). The measurements are rulers, not ears: **a version that passes can still be wrong, and one that fails can still sound right.**
+
+Tested here with a fake TTS server (extra sounds were flagged, the middle sound was cut out, the page saved the picks, the picks file was accepted by `apply-picks`). **Not tested with the real Soniox voice**: whether the "said 3 times" versions give a good middle sound is unverified; the page is how you find out. If the middle sound has a rising tone (list intonation), pick `plain` or `slow`.
+
+For a syllable that is still wrong, the fix ladder: (a) respell it in `content/tts-respell.json`, then rerun only that one: `pnpm content:syllable-tts -- --yes --only ma` (delete `~/syllable-tts/raw/ma.*` first); what respelling reads "ma" cleanly is **unverified**: try `maa`, `mah`, `ma-ma`; (b) a different voice (`--voice`), (c) record it with the recorder page.
+
+### Route B in general (Soniox TTS), original notes
 
 Verified settings (`docs/VOICE.md`, checked 2026-10-18): model `tts-rt-v2`, language `tl`, voice Maya or a cloned voice id, `speed` 0.7 to 1.3 (keep near 1), `wav` 24 kHz, no tags on phonics core, `reduce_silence` off. Fix ladder per failed syllable: (a) respell or add punctuation in `content/tts-respell.json` (what respelling makes Soniox read "ma" alone is **unverified**: try `ma.`, `"ma"`, `ma-`), (b) `--speed 0.9`, (c) regenerate twice and compare with `content:syllable-check`, (d) record it. Given the "mabuda" report, expect to end at (d) for many syllables, so go to Route A directly.
 

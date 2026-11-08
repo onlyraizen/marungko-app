@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { UnitSchema, audioKey } from "../packages/shared/dist/index.js";
+import { measure, readWav } from "./lib/audio.mts";
 
 /**
  * Measures every syllable clip and lists the ones that look wrong. It cannot hear: it flags what a ruler can
@@ -11,7 +12,8 @@ import { UnitSchema, audioKey } from "../packages/shared/dist/index.js";
  *   pnpm content:syllable-check -- --dir <folder>  check another folder (for example the unzipped recorder download)
  *   add --strict to exit with an error when any clip needs attention (for scripts)
  *   pnpm content:syllable-check -- --quarantine --yes
- *                                                move every syllable clip that is not your own recording into
+ *                                                move every old computer-voice syllable clip (not your recording,
+ *                                                not picked with pnpm content:syllable-tts) into
  *                                                content/_old-tts-syllables/ (nothing is deleted; move them back to undo)
  *
  * Measured from the audio: length, silence at both ends, loudness, number of vowel "beats" (a one-syllable clip
@@ -28,8 +30,8 @@ const option = (name: string): string | undefined => {
 };
 const dir = option("dir") ?? join(root, "frontend", "assets", "audio", "words");
 const metaPath = join(root, "content", "audio-meta.json");
-const meta: Record<string, { voice?: string } | undefined> = existsSync(metaPath)
-  ? (JSON.parse(readFileSync(metaPath, "utf8")) as Record<string, { voice?: string }>)
+const meta: Record<string, { voice?: string; pickedAt?: string } | undefined> = existsSync(metaPath)
+  ? (JSON.parse(readFileSync(metaPath, "utf8")) as Record<string, { voice?: string; pickedAt?: string }>)
   : {};
 
 // Limits (starting values; see docs/SYLLABLE-REWORK.md section 4).
@@ -41,150 +43,6 @@ const RMS_TOLERANCE_DB = 1.5;
 const MAX_PEAK_DB = -0.5;
 const MAX_PITCH_GAP_SEMITONES = 5;
 const RISING_SEMITONES = 2;
-
-type Wav = { samples: Float32Array; rate: number };
-
-function readWav(path: string): Wav | null {
-  const buffer = readFileSync(path);
-  if (buffer.length < 44 || buffer.toString("ascii", 0, 4) !== "RIFF") return null;
-  let offset = 12;
-  let rate = 0;
-  let bits = 0;
-  let channels = 1;
-  while (offset + 8 <= buffer.length) {
-    const id = buffer.toString("ascii", offset, offset + 4);
-    const size = buffer.readUInt32LE(offset + 4);
-    const body = offset + 8;
-    if (id === "fmt ") {
-      channels = buffer.readUInt16LE(body + 2);
-      rate = buffer.readUInt32LE(body + 4);
-      bits = buffer.readUInt16LE(body + 14);
-    } else if (id === "data") {
-      if (bits !== 16) return null;
-      const length = size === 0 || size > buffer.length - body ? buffer.length - body : size;
-      const frames = Math.floor(length / (2 * channels));
-      const samples = new Float32Array(frames);
-      for (let i = 0; i < frames; i += 1) samples[i] = buffer.readInt16LE(body + i * 2 * channels) / 32768;
-      return { samples, rate };
-    }
-    offset = body + size + (size % 2);
-  }
-  return null;
-}
-
-const toDb = (value: number): number => (value <= 1e-6 ? -120 : 20 * Math.log10(value));
-
-type Measure = {
-  seconds: number;
-  leadMs: number;
-  tailMs: number;
-  peakDb: number;
-  rmsDb: number;
-  beats: number;
-  pitchHz: number | null;
-  pitchMove: number | null; // semitones, last third minus first third of the voiced part
-};
-
-function measure({ samples, rate }: Wav): Measure {
-  const hop = Math.round(rate * 0.01);
-  const count = Math.floor(samples.length / hop);
-  let peak = 0;
-  for (const value of samples) peak = Math.max(peak, Math.abs(value));
-  const env: number[] = [];
-  for (let f = 0; f < count; f += 1) {
-    let sum = 0;
-    for (let i = f * hop; i < (f + 1) * hop; i += 1) sum += samples[i] * samples[i];
-    env.push(toDb(Math.sqrt(sum / hop)));
-  }
-  const maxEnv = Math.max(...env);
-  const gate = Math.max(maxEnv - 40, -60); // "sound" means within 40 dB of the loudest part
-  const first = env.findIndex((value) => value > gate);
-  const last = env.length - 1 - [...env].reverse().findIndex((value) => value > gate);
-  const leadMs = first < 0 ? 0 : first * 10;
-  const tailMs = last < 0 ? 0 : (env.length - 1 - last) * 10 + (samples.length - count * hop) / rate * 1000;
-
-  // Loudness over the sound part only (what normalize-audio targets).
-  let sum = 0;
-  let n = 0;
-  for (let f = Math.max(first, 0); f <= last; f += 1) {
-    if (env[f] > maxEnv - 25) {
-      for (let i = f * hop; i < (f + 1) * hop; i += 1) sum += samples[i] * samples[i];
-      n += hop;
-    }
-  }
-  const rmsDb = n > 0 ? toDb(Math.sqrt(sum / n)) : -120;
-
-  // Beats: peaks of the smoothed loudness curve that are separated by a clear dip. One syllable = one beat.
-  const smooth = env.map((_, f) => {
-    const slice = env.slice(Math.max(0, f - 1), f + 2);
-    return slice.reduce((a, b) => a + b, 0) / slice.length;
-  });
-  let beats = 0;
-  let climbing = true;
-  let top = -Infinity;
-  let valley = Infinity;
-  for (let f = Math.max(first, 0); f <= last; f += 1) {
-    const value = smooth[f];
-    if (value < maxEnv - 30) continue;
-    if (climbing) {
-      if (value > top) top = value;
-      else if (top - value >= 7) {
-        beats += 1;
-        climbing = false;
-        valley = value;
-      }
-    } else {
-      if (value < valley) valley = value;
-      else if (value - valley >= 7 && value > maxEnv - 22) {
-        climbing = true;
-        top = value;
-      }
-    }
-  }
-  if (climbing && top > -Infinity) beats += 1;
-
-  // Pitch: strongest repeat period between 70 and 400 Hz, on the loud frames only.
-  const win = Math.round(rate * 0.04);
-  const minLag = Math.round(rate / 400);
-  const maxLag = Math.round(rate / 70);
-  const pitches: { t: number; hz: number }[] = [];
-  for (let f = Math.max(first, 0); f <= last; f += 1) {
-    if (env[f] < maxEnv - 20) continue;
-    const start = f * hop;
-    if (start + win + maxLag >= samples.length) break;
-    let energy = 0;
-    for (let i = 0; i < win; i += 1) energy += samples[start + i] * samples[start + i];
-    if (energy < 1e-6) continue;
-    let bestLag = 0;
-    let best = 0;
-    for (let lag = minLag; lag <= maxLag; lag += 1) {
-      let cross = 0;
-      let other = 0;
-      for (let i = 0; i < win; i += 1) {
-        cross += samples[start + i] * samples[start + i + lag];
-        other += samples[start + i + lag] * samples[start + i + lag];
-      }
-      const score = cross / Math.sqrt(energy * other + 1e-12);
-      if (score > best) {
-        best = score;
-        bestLag = lag;
-      }
-    }
-    if (best > 0.6 && bestLag > 0) pitches.push({ t: f, hz: rate / bestLag });
-  }
-  let pitchHz: number | null = null;
-  let pitchMove: number | null = null;
-  if (pitches.length >= 6) {
-    const hz = pitches.map((p) => p.hz).sort((a, b) => a - b);
-    pitchHz = hz[Math.floor(hz.length / 2)];
-    const med = (list: number[]): number => [...list].sort((a, b) => a - b)[Math.floor(list.length / 2)];
-    const third = Math.floor(pitches.length / 3);
-    const head = med(pitches.slice(0, third).map((p) => p.hz));
-    const tail = med(pitches.slice(pitches.length - third).map((p) => p.hz));
-    pitchMove = 12 * Math.log2(tail / head);
-  }
-  return { seconds: samples.length / rate, leadMs, tailMs, peakDb: toDb(peak), rmsDb, beats, pitchHz, pitchMove };
-}
 
 // What to check: every syllable of Books 1 to 4 (unit files 01 to 04), or the word clips with --words.
 const books: { key: string; text: string; book: number }[] = [];
@@ -217,9 +75,9 @@ if (flag("quarantine")) {
   const moveDir = join(root, "content", "_old-tts-syllables");
   const stale = books.filter((entry) => {
     const path = join(wordsDir, `${entry.key}.wav`);
-    return existsSync(path) && meta[entry.key]?.voice !== "human";
+    return existsSync(path) && meta[entry.key]?.voice !== "human" && meta[entry.key]?.pickedAt === undefined;
   });
-  console.log(`${stale.length} syllable clip(s) are not your own recording: ${stale.map((entry) => entry.key).join(" ") || "none"}`);
+  console.log(`${stale.length} syllable clip(s) are old computer-voice clips (not your recording, not picked on the page): ${stale.map((entry) => entry.key).join(" ") || "none"}`);
   if (!flag("yes")) {
     console.log("Dry run. Add --yes to move them to content/_old-tts-syllables/ (nothing is deleted).");
     process.exit(0);
@@ -236,7 +94,9 @@ for (const entry of targets) {
   // The recorder zip names files ma_syllable.wav; the app folder uses ma.wav. Either is found.
   const plain = join(dir, `${entry.key}.wav`);
   const path = existsSync(plain) ? plain : join(dir, `${entry.key}_syllable.wav`);
-  const source = meta[entry.key]?.voice === "human" ? "human" : meta[entry.key] !== undefined ? "TTS" : "unknown";
+  const entryMeta = meta[entry.key];
+  const source =
+    entryMeta?.voice === "human" ? "human" : entryMeta?.pickedAt !== undefined ? "TTS-picked" : entryMeta !== undefined ? "old-TTS" : "unknown";
   const flags: string[] = [];
   const wav = existsSync(path) ? readWav(path) : null;
   if (wav === null) {
@@ -245,7 +105,7 @@ for (const entry of targets) {
     continue;
   }
   const m = measure(wav);
-  if (!flag("words") && !flag("any-source") && !option("dir") && source !== "human") flags.push("NOT-HUMAN (replace)");
+  if (!flag("words") && !flag("any-source") && !option("dir") && source !== "human" && source !== "TTS-picked") flags.push("OLD-TTS (replace or pick again)");
   if (m.seconds > MAX_SECONDS && !flag("words")) flags.push(`LONG ${m.seconds.toFixed(2)}s (extra sounds?)`);
   if (m.seconds < MIN_SECONDS) flags.push("TOO-SHORT");
   if ((m.beats >= 3 || (m.beats === 2 && m.seconds > 0.55)) && !flag("words")) flags.push(`BEATS=${m.beats}? (more than one syllable?)`);
