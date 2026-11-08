@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Basa-Bata syllable recorder</title>
+<style>
+  :root {
+    --bg: #f6f7f4; --card: #ffffff; --ink: #1d2a24; --muted: #5b6b63; --line: #dfe5df;
+    --accent: #1f7a4d; --accent-ink: #ffffff; --warn: #a15c00; --warn-bg: #fff3dc; --bad: #b3261e; --bad-bg: #fde8e6; --ok-bg: #e3f4ea;
+    --rec: #c62828;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #121714; --card: #1b221e; --ink: #e8efe9; --muted: #9fb0a6; --line: #2d3832; --accent: #4cc38a; --accent-ink: #08130d;
+      --warn: #ffc56b; --warn-bg: #3a2c10; --bad: #ff8a80; --bad-bg: #3b1c19; --ok-bg: #173225; --rec: #ff6b6b; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 1.4rem; margin: 8px 0 4px; }
+  h2 { font-size: 1.1rem; margin: 28px 0 8px; position: sticky; top: 0; background: var(--bg); padding: 8px 0; z-index: 2; }
+  p, li { color: var(--muted); }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 12px 0; }
+  .panel ol { margin: 6px 0 0 18px; padding: 0; }
+  button { font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 8px 14px; min-height: 40px; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  button.rec { background: var(--rec); color: #fff; border-color: var(--rec); font-weight: 600; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .row { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 10px 0; display: grid; grid-template-columns: 96px 1fr; gap: 8px 14px; }
+  .row.current { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+  .syl { font-size: 2.4rem; font-weight: 700; line-height: 1.1; }
+  .ipa { color: var(--muted); font-size: .95rem; }
+  .tags span { display: inline-block; font-size: .78rem; border-radius: 99px; padding: 1px 8px; margin: 2px 4px 2px 0; background: var(--warn-bg); color: var(--warn); }
+  .tags span.stop { background: var(--ok-bg); color: var(--ink); }
+  details { color: var(--muted); font-size: .92rem; }
+  .takes { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .take { border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .take.picked { border-color: var(--accent); background: var(--ok-bg); }
+  .take .stat { font-size: .85rem; color: var(--muted); }
+  .take .stat.warn { color: var(--warn); font-weight: 600; }
+  .take .stat.bad { color: var(--bad); font-weight: 600; }
+  .bar { position: sticky; bottom: 0; background: var(--bg); padding: 10px 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--line); }
+  #status { color: var(--muted); }
+  .meter { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; width: 140px; }
+  .meter i { display: block; height: 100%; width: 0; background: var(--accent); }
+  @media (max-width: 560px) { .row { grid-template-columns: 1fr; } .syl { font-size: 2rem; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Basa-Bata syllable recorder</h1>
+  <p>41 syllables of Books 1 to 4. Record each one 3 times, pick the best, then download the zip.</p>
+
+  <div class="panel">
+    <strong>Before you start</strong>
+    <ol>
+      <li>Quiet room, no fan or aircon. Soft surroundings (a closet with clothes, or a blanket over you) cut the echo.</li>
+      <li>Mouth 15 to 20 cm from the mic, a little to the side so "p, b, t" do not pop. Same distance for every clip.</li>
+      <li>Say ONLY the syllable, once, slowly and calmly, ending a little lower in pitch (not a question). No letter name, no word, no "uh" after it.</li>
+      <li>Do not move the mic or change your voice between clips. Record all 41 in one sitting.</li>
+      <li>Your takes stay in this tab only. Do not refresh or close it before you download the zip.</li>
+    </ol>
+  </div>
+
+  <div class="bar" style="position:static;border:0;padding:0">
+    <button id="allow" class="primary">1. Allow the microphone</button>
+    <div class="meter" aria-label="input level"><i id="level"></i></div>
+    <span id="status">Microphone is off.</span>
+  </div>
+
+  <div id="list"></div>
+
+  <div class="bar">
+    <button id="download" class="primary">Download zip of the picked takes</button>
+    <label><input type="checkbox" id="alltakes"> also include every take</label>
+    <span id="summary">0 of 41 picked</span>
+  </div>
+  <p>Keys: <kbd>Space</kbd> record or stop the highlighted row, <kbd>&#8595;</kbd> <kbd>&#8593;</kbd> change row, <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> pick that take.</p>
+</main>
+
+<script>
+const DATA = [{"syllable":"ma","book":1,"ipa":"/ma/","reported":true,"stop":false,"english":"","note":"lips closed, steady hum straight into the vowel. Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"sa","book":1,"ipa":"/sa/","reported":false,"stop":false,"english":"","note":"clean \"s\", no \"sh\", no voicing. Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"mi","book":1,"ipa":"/mi/","reported":false,"stop":false,"english":"English \"mee\"","note":"lips closed, steady hum straight into the vowel. Vowel: short, pure \"ee\"; no glide, not a long English \"see\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"si","book":1,"ipa":"/si/","reported":true,"stop":false,"english":"English \"see\"","note":"clean \"s\", no \"sh\", no voicing. Vowel: short, pure \"ee\"; no glide, not a long English \"see\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"mo","book":1,"ipa":"/mo/","reported":false,"stop":false,"english":"English \"moh-w\" (glide)","note":"lips closed, steady hum straight into the vowel. Vowel: pure round \"o\"; NOT English \"oh\" (no glide to oo). One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"so","book":1,"ipa":"/so/","reported":false,"stop":false,"english":"English \"so\" (glide)","note":"clean \"s\", no \"sh\", no voicing. Vowel: pure round \"o\"; NOT English \"oh\" (no glide to oo). One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"ba","book":2,"ipa":"/ba/","reported":false,"stop":true,"english":"","note":"voiced, lips pop straight into the vowel; no \"buh\" before it. Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"be","book":2,"ipa":"/bɛ/","reported":true,"stop":true,"english":"English \"bay\"","note":"voiced, lips pop straight into the vowel; no \"buh\" before it. Vowel: mid front like \"e\" in bed or Spanish \"e\"; NOT English \"ay\" (no glide to ee). One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"bi","book":2,"ipa":"/bi/","reported":true,"stop":true,"english":"English \"bee\" (glide)","note":"voiced, lips pop straight into the vowel; no \"buh\" before it. Vowel: short, pure \"ee\"; no glide, not a long English \"see\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"bo","book":2,"ipa":"/bo/","reported":false,"stop":true,"english":"English \"bow/beau\" (glide)","note":"voiced, lips pop straight into the vowel; no \"buh\" before it. Vowel: pure round \"o\"; NOT English \"oh\" (no glide to oo). One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"bu","book":2,"ipa":"/bu/","reported":true,"stop":true,"english":"English \"boo\" (long)","note":"voiced, lips pop straight into the vowel; no \"buh\" before it. Vowel: short, pure \"oo\"; no glide, not a long English \"boo\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"me","book":2,"ipa":"/mɛ/","reported":false,"stop":false,"english":"","note":"lips closed, steady hum straight into the vowel. Vowel: mid front like \"e\" in bed or Spanish \"e\"; NOT English \"ay\" (no glide to ee). One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"se","book":2,"ipa":"/sɛ/","reported":true,"stop":false,"english":"English \"say\"","note":"clean \"s\", no \"sh\", no voicing. Vowel: mid front like \"e\" in bed or Spanish \"e\"; NOT English \"ay\" (no glide to ee). One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"mu","book":2,"ipa":"/mu/","reported":false,"stop":false,"english":"English \"moo\"","note":"lips closed, steady hum straight into the vowel. Vowel: short, pure \"oo\"; no glide, not a long English \"boo\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"su","book":2,"ipa":"/su/","reported":false,"stop":false,"english":"English \"sue\"","note":"clean \"s\", no \"sh\", no voicing. Vowel: short, pure \"oo\"; no glide, not a long English \"boo\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"ta","book":3,"ipa":"/t̪a/","reported":true,"stop":true,"english":"aspirated English \"tah\"","note":"tongue tip on the back of the upper teeth; NO puff of air, no \"tuh\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"te","book":3,"ipa":"/t̪ɛ/","reported":true,"stop":true,"english":"English \"tay\"","note":"tongue tip on the back of the upper teeth; NO puff of air, no \"tuh\". Vowel: mid front like \"e\" in bed or Spanish \"e\"; NOT English \"ay\" (no glide to ee). One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"ti","book":3,"ipa":"/t̪i/","reported":false,"stop":true,"english":"English \"tea\"","note":"tongue tip on the back of the upper teeth; NO puff of air, no \"tuh\". Vowel: short, pure \"ee\"; no glide, not a long English \"see\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"to","book":3,"ipa":"/t̪o/","reported":false,"stop":true,"english":"English \"toe\" (glide)","note":"tongue tip on the back of the upper teeth; NO puff of air, no \"tuh\". Vowel: pure round \"o\"; NOT English \"oh\" (no glide to oo). One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"tu","book":3,"ipa":"/t̪u/","reported":true,"stop":true,"english":"English \"too\" (puff + long)","note":"tongue tip on the back of the upper teeth; NO puff of air, no \"tuh\". Vowel: short, pure \"oo\"; no glide, not a long English \"boo\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"ka","book":3,"ipa":"/ka/","reported":false,"stop":true,"english":"","note":"NO puff of air (unlike English \"key\"), no \"kuh\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"ke","book":3,"ipa":"/kɛ/","reported":true,"stop":true,"english":"English \"kay\"","note":"NO puff of air (unlike English \"key\"), no \"kuh\". Vowel: mid front like \"e\" in bed or Spanish \"e\"; NOT English \"ay\" (no glide to ee). One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"ki","book":3,"ipa":"/ki/","reported":true,"stop":true,"english":"English \"key\" (puff + long)","note":"NO puff of air (unlike English \"key\"), no \"kuh\". Vowel: short, pure \"ee\"; no glide, not a long English \"see\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"ko","book":3,"ipa":"/ko/","reported":true,"stop":true,"english":"English \"koh-w\" (glide)","note":"NO puff of air (unlike English \"key\"), no \"kuh\". Vowel: pure round \"o\"; NOT English \"oh\" (no glide to oo). One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"ku","book":3,"ipa":"/ku/","reported":true,"stop":true,"english":"English \"coo\"","note":"NO puff of air (unlike English \"key\"), no \"kuh\". Vowel: short, pure \"oo\"; no glide, not a long English \"boo\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"la","book":3,"ipa":"/la/","reported":true,"stop":false,"english":"","note":"clear \"l\", tongue tip up; not the dark English \"l\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"le","book":3,"ipa":"/lɛ/","reported":true,"stop":false,"english":"English \"lay\"","note":"clear \"l\", tongue tip up; not the dark English \"l\". Vowel: mid front like \"e\" in bed or Spanish \"e\"; NOT English \"ay\" (no glide to ee). One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"li","book":3,"ipa":"/li/","reported":false,"stop":false,"english":"English \"lee\"","note":"clear \"l\", tongue tip up; not the dark English \"l\". Vowel: short, pure \"ee\"; no glide, not a long English \"see\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"lo","book":3,"ipa":"/lo/","reported":true,"stop":false,"english":"English \"low\" (glide)","note":"clear \"l\", tongue tip up; not the dark English \"l\". Vowel: pure round \"o\"; NOT English \"oh\" (no glide to oo). One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"lu","book":3,"ipa":"/lu/","reported":true,"stop":false,"english":"English \"loo\"","note":"clear \"l\", tongue tip up; not the dark English \"l\". Vowel: short, pure \"oo\"; no glide, not a long English \"boo\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"ya","book":3,"ipa":"/ja/","reported":false,"stop":false,"english":"","note":"glide into the vowel, like \"y\" in \"yes\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"ye","book":3,"ipa":"/jɛ/","reported":true,"stop":false,"english":"English \"yeah\" (also the recogniser hears it as \"yeah\")","note":"glide into the vowel, like \"y\" in \"yes\". Vowel: mid front like \"e\" in bed or Spanish \"e\"; NOT English \"ay\" (no glide to ee). One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"yo","book":3,"ipa":"/jo/","reported":false,"stop":false,"english":"English \"yo\"","note":"glide into the vowel, like \"y\" in \"yes\". Vowel: pure round \"o\"; NOT English \"oh\" (no glide to oo). One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"yu","book":3,"ipa":"/ju/","reported":true,"stop":false,"english":"English \"you\" (long, with a glide)","note":"glide into the vowel, like \"y\" in \"yes\". Vowel: short, pure \"oo\"; no glide, not a long English \"boo\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"na","book":4,"ipa":"/na/","reported":false,"stop":false,"english":"","note":"tongue tip at the teeth ridge. Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"ga","book":4,"ipa":"/ɡa/","reported":true,"stop":true,"english":"soft or aspirated \"g\"","note":"hard \"g\", voiced; no \"guh\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"pa","book":4,"ipa":"/pa/","reported":false,"stop":true,"english":"","note":"NO puff of air, lips only, no \"puh\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"ra","book":4,"ipa":"/ɾa/","reported":false,"stop":false,"english":"English \"r\" instead of a tap","note":"single quick tap of the tongue; not the English \"r\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"da","book":4,"ipa":"/d̪a/","reported":false,"stop":true,"english":"","note":"tongue tip on the upper teeth; no \"duh\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"ha","book":4,"ipa":"/ha/","reported":false,"stop":false,"english":"","note":"light breath, then the vowel. Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"},{"syllable":"wa","book":4,"ipa":"/wa/","reported":false,"stop":false,"english":"","note":"lips rounded, glide into the vowel. Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.","seconds":"0.30 to 0.55"}];
+const RECORD_SECONDS = 2.5;
+const MAX_TAKES = 3;
+const state = { stream: null, ctx: null, analyser: null, recorder: null, recordingFor: null, current: 0, takes: {}, picked: {}, timer: null };
+DATA.forEach(function (d) { state.takes[d.syllable] = []; });
+
+const $ = function (id) { return document.getElementById(id); };
+const el = function (tag, attrs, kids) {
+  const node = document.createElement(tag);
+  Object.keys(attrs || {}).forEach(function (k) {
+    if (k === 'class') node.className = attrs[k];
+    else if (k === 'text') node.textContent = attrs[k];
+    else if (k.slice(0, 2) === 'on') node.addEventListener(k.slice(2), attrs[k]);
+    else node.setAttribute(k, attrs[k]);
+  });
+  (kids || []).forEach(function (kid) { node.appendChild(kid); });
+  return node;
+};
+
+function analyse(samples, rate) {
+  const hop = Math.round(rate * 0.01);
+  const frames = Math.floor(samples.length / hop);
+  const env = [];
+  let peak = 0;
+  for (let i = 0; i < samples.length; i++) peak = Math.max(peak, Math.abs(samples[i]));
+  for (let f = 0; f < frames; f++) {
+    let s = 0;
+    for (let i = f * hop; i < (f + 1) * hop; i++) s += samples[i] * samples[i];
+    env.push(20 * Math.log10(Math.sqrt(s / hop) + 1e-9));
+  }
+  const max = Math.max.apply(null, env);
+  const gate = Math.max(max - 35, -55);
+  let first = env.findIndex(function (v) { return v > gate; });
+  let last = env.length - 1 - env.slice().reverse().findIndex(function (v) { return v > gate; });
+  if (first < 0) first = 0;
+  return { peakDb: 20 * Math.log10(peak + 1e-9), seconds: Math.max(0, (last - first + 1) * 0.01), startSec: first * 0.01, endSec: (last + 1) * 0.01, loudDb: max };
+}
+
+function verdict(a) {
+  const notes = [];
+  let level = '';
+  if (a.loudDb < -42) { notes.push('too quiet or nothing heard'); level = 'bad'; }
+  if (a.peakDb > -1) { notes.push('too loud, it clips: step back'); level = 'bad'; }
+  if (a.seconds > 0.75) { notes.push('longer than a single syllable: only the syllable, once'); level = level || 'warn'; }
+  if (a.seconds < 0.15 && a.loudDb >= -42) { notes.push('very short'); level = level || 'warn'; }
+  return { notes: notes, level: level };
+}
+
+function encodeWav(samples, rate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  const write = function (o, s) { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+  write(0, 'RIFF'); view.setUint32(4, 36 + samples.length * 2, true); write(8, 'WAVE'); write(12, 'fmt ');
+  view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+  view.setUint32(24, rate, true); view.setUint32(28, rate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+  write(36, 'data'); view.setUint32(40, samples.length * 2, true);
+  for (let i = 0; i < samples.length; i++) {
+    const v = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(44 + i * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true);
+  }
+  return new Uint8Array(buffer);
+}
+
+// Store-only zip (no compression), enough for a folder of WAV files.
+const CRC = (function () { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(bytes) { let c = 0xffffffff; for (let i = 0; i < bytes.length; i++) c = CRC[(c ^ bytes[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+function makeZip(files) {
+  const enc = new TextEncoder();
+  const chunks = [], central = [];
+  let offset = 0;
+  files.forEach(function (f) {
+    const name = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+    const head = new DataView(new ArrayBuffer(30));
+    head.setUint32(0, 0x04034b50, true); head.setUint16(4, 20, true); head.setUint16(6, 0x0800, true); head.setUint16(8, 0, true);
+    head.setUint16(10, 0, true); head.setUint16(12, 0x21, true); head.setUint32(14, crc, true); head.setUint32(18, size, true); head.setUint32(22, size, true);
+    head.setUint16(26, name.length, true); head.setUint16(28, 0, true);
+    chunks.push(new Uint8Array(head.buffer), name, f.data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+    c.setUint16(12, 0, true); c.setUint16(14, 0x21, true); c.setUint32(16, crc, true); c.setUint32(20, size, true); c.setUint32(24, size, true);
+    c.setUint16(28, name.length, true); c.setUint32(42, offset, true);
+    central.push(new Uint8Array(c.buffer), name);
+    offset += 30 + name.length + size;
+  });
+  let centralSize = 0; central.forEach(function (c) { centralSize += c.length; });
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, centralSize, true); end.setUint32(16, offset, true);
+  return new Blob(chunks.concat(central, [new Uint8Array(end.buffer)]), { type: 'application/zip' });
+}
+
+function render() {
+  const list = $('list');
+  list.textContent = '';
+  let lastBook = 0;
+  DATA.forEach(function (d, index) {
+    if (d.book !== lastBook) { lastBook = d.book; list.appendChild(el('h2', { text: 'Book ' + d.book })); }
+    const takes = state.takes[d.syllable];
+    const tags = el('div', { class: 'tags' });
+    if (d.reported) tags.appendChild(el('span', { text: 'tester said wrong' }));
+    if (d.stop) tags.appendChild(el('span', { class: 'stop', text: 'stop sound: no puff, no "uh"' }));
+    if (d.english) tags.appendChild(el('span', { text: 'not ' + d.english }));
+    const isRec = state.recordingFor === d.syllable;
+    const recBtn = el('button', { class: isRec ? 'rec' : 'primary', text: isRec ? 'Stop' : (takes.length >= MAX_TAKES ? 'Record again (replaces take 3)' : 'Record take ' + (takes.length + 1)), onclick: function () { state.current = index; toggle(d.syllable); } });
+    recBtn.disabled = !state.stream || (state.recordingFor !== null && !isRec);
+    const takeBox = el('div', { class: 'takes' }, [recBtn]);
+    takes.forEach(function (t, i) {
+      const v = verdict(t.stats);
+      const picked = state.picked[d.syllable] === i;
+      const stat = el('span', { class: 'stat ' + v.level, text: t.stats.seconds.toFixed(2) + ' s' + (v.notes.length ? ' - ' + v.notes.join('; ') : '') });
+      takeBox.appendChild(el('div', { class: 'take' + (picked ? ' picked' : '') }, [
+        el('button', { text: 'Play ' + (i + 1), onclick: function () { play(t); } }),
+        stat,
+        el('button', { text: picked ? 'Picked' : 'Use this', onclick: function () { state.picked[d.syllable] = i; render(); } }),
+      ]));
+    });
+    list.appendChild(el('div', { class: 'row' + (index === state.current ? ' current' : ''), id: 'row-' + d.syllable }, [
+      el('div', {}, [el('div', { class: 'syl', text: d.syllable }), el('div', { class: 'ipa', text: d.ipa })]),
+      el('div', {}, [tags, el('details', {}, [el('summary', { text: 'How to say it' }), el('div', { text: d.note })])]),
+      takeBox,
+    ]));
+  });
+  const n = Object.keys(state.picked).length;
+  $('summary').textContent = n + ' of ' + DATA.length + ' picked';
+}
+
+function play(t) {
+  const ctx = state.ctx || new AudioContext();
+  const src = ctx.createBufferSource();
+  const buf = ctx.createBuffer(1, t.samples.length, t.rate);
+  buf.copyToChannel(t.samples, 0);
+  src.buffer = buf; src.connect(ctx.destination); src.start();
+}
+
+async function allow() {
+  try {
+    state.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+  } catch (e) {
+    $('status').textContent = 'The microphone was blocked (' + e.name + '). Allow it for this page and try again.';
+    return;
+  }
+  state.ctx = new AudioContext();
+  const source = state.ctx.createMediaStreamSource(state.stream);
+  state.analyser = state.ctx.createAnalyser(); state.analyser.fftSize = 1024;
+  source.connect(state.analyser);
+  $('status').textContent = 'Microphone is on. Say "ma" to test the meter, then record.';
+  $('allow').disabled = true;
+  const data = new Float32Array(state.analyser.fftSize);
+  (function tick() {
+    state.analyser.getFloatTimeDomainData(data);
+    let s = 0; for (let i = 0; i < data.length; i++) s += data[i] * data[i];
+    const db = 20 * Math.log10(Math.sqrt(s / data.length) + 1e-9);
+    $('level').style.width = Math.max(0, Math.min(100, (db + 60) * (100 / 55))) + '%';
+    requestAnimationFrame(tick);
+  })();
+  render();
+}
+
+function toggle(syllable) {
+  if (!state.stream) return;
+  if (state.recordingFor === syllable) { state.recorder.stop(); return; }
+  if (state.recordingFor !== null) return;
+  const chunks = [];
+  const recorder = new MediaRecorder(state.stream);
+  state.recorder = recorder;
+  state.recordingFor = syllable;
+  recorder.ondataavailable = function (e) { if (e.data.size > 0) chunks.push(e.data); };
+  recorder.onstop = async function () {
+    clearTimeout(state.timer);
+    state.recordingFor = null;
+    try {
+      const raw = await new Blob(chunks, { type: recorder.mimeType }).arrayBuffer();
+      const audio = await state.ctx.decodeAudioData(raw);
+      const samples = new Float32Array(audio.getChannelData(0));
+      const takes = state.takes[syllable];
+      const take = { samples: samples, rate: audio.sampleRate, stats: analyse(samples, audio.sampleRate) };
+      if (takes.length >= MAX_TAKES) takes[MAX_TAKES - 1] = take; else takes.push(take);
+      if (state.picked[syllable] === undefined) state.picked[syllable] = takes.indexOf(take);
+      const v = verdict(take.stats);
+      $('status').textContent = syllable + ': ' + take.stats.seconds.toFixed(2) + ' s heard' + (v.notes.length ? ' - ' + v.notes.join('; ') : ' - looks fine. Listen to it.');
+    } catch (e) {
+      $('status').textContent = 'Could not read that recording (' + e.message + '). Try again.';
+    }
+    render();
+  };
+  recorder.start();
+  $('status').textContent = 'Recording "' + syllable + '" - say it once, then wait.';
+  state.timer = setTimeout(function () { if (recorder.state === 'recording') recorder.stop(); }, RECORD_SECONDS * 1000);
+  render();
+}
+
+function download() {
+  const files = [];
+  const rows = ['syllable,take,seconds_heard,peak_db'];
+  DATA.forEach(function (d) {
+    const takes = state.takes[d.syllable];
+    const i = state.picked[d.syllable];
+    if (i !== undefined && takes[i]) {
+      files.push({ name: d.syllable + '_syllable.wav', data: encodeWav(takes[i].samples, takes[i].rate) });
+      rows.push(d.syllable + ',' + (i + 1) + ',' + takes[i].stats.seconds.toFixed(2) + ',' + takes[i].stats.peakDb.toFixed(1));
+    }
+    if ($('alltakes').checked) takes.forEach(function (t, k) { files.push({ name: 'all-takes/' + d.syllable + '_take' + (k + 1) + '.wav', data: encodeWav(t.samples, t.rate) }); });
+  });
+  if (files.length === 0) { $('status').textContent = 'Nothing recorded yet.'; return; }
+  files.push({ name: 'picked.csv', data: new TextEncoder().encode(rows.join('\n') + '\n') });
+  const url = URL.createObjectURL(makeZip(files));
+  const a = el('a', { href: url, download: 'basa-bata-syllables.zip' });
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+  $('status').textContent = 'Downloaded ' + (files.length - 1) + ' file(s). Unzip into a folder, then run the import command from docs/SYLLABLE-REWORK.md.';
+}
+
+$('allow').addEventListener('click', allow);
+$('download').addEventListener('click', download);
+window.addEventListener('beforeunload', function (e) {
+  if (Object.keys(state.picked).length > 0) { e.preventDefault(); e.returnValue = ''; }
+});
+document.addEventListener('keydown', function (e) {
+  if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  const d = DATA[state.current];
+  if (e.code === 'Space' && d) { e.preventDefault(); toggle(d.syllable); }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); state.current = Math.min(DATA.length - 1, state.current + 1); render(); const r = $('row-' + DATA[state.current].syllable); if (r) r.scrollIntoView({ block: 'center' }); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); state.current = Math.max(0, state.current - 1); render(); const r = $('row-' + DATA[state.current].syllable); if (r) r.scrollIntoView({ block: 'center' }); }
+  else if (/^[1-3]$/.test(e.key) && d && state.takes[d.syllable][Number(e.key) - 1]) { state.picked[d.syllable] = Number(e.key) - 1; render(); }
+});
+render();
+</script>
+</body>
+</html>

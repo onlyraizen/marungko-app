@@ -35,3 +35,7 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 *.swp
+
+# Old computer-voice syllable clips moved aside by pnpm content:syllable-check -- --quarantine
+content/_old-tts-syllables/
+syllable-check.txt
