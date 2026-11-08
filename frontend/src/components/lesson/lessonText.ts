@@ -3,7 +3,9 @@ import type { MatchResult } from "@marungko/shared";
 /** The praise Capi says after a right answer. Every line has a recording. */
 export const PRAISE = ["Tama!", "Magaling!", "Husay!", "Ang galing mo!"] as const;
 
-export const FEEDBACK: Record<MatchResult["kind"], { title: string; voice: string }> = {
+export const FEEDBACK: Record<MatchResult["kind"] | "pace", { title: string; voice: string }> = {
+  // The right word, said too fast: Capi asks to slow down and say it sound by sound. Not a mistake.
+  pace: { title: "Dahan-dahan lang tayo", voice: "Dahan-dahan lang tayo." },
   correct: { title: "Tama!", voice: "Tama!" },
   almost: { title: "Halos na!", voice: "Halos na!" },
   incorrect: { title: "Subukan ulit", voice: "Subukan ulit." },

@@ -107,6 +107,16 @@ export function CrossIcon({ size = 18, color = "#FFFFFF" }: P) {
   );
 }
 
+/** A round arrow: "try again". A gentle sign, not a cross. */
+export function RetryIcon({ size = 20, color = "#FFFFFF" }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M19 12 A7 7 0 1 1 15.5 5.9" fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" />
+      <Path d="M15 2.5 L16.5 6.5 L12.3 7.3" fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 export function ShareIcon({ size = 24, color = "#2E8B45" }: P) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../../theme/colors";
 import { font } from "../../theme/fonts";
 import Button3D from "../ui/Button3D";
-import { CheckIcon, CrossIcon, FlagIcon, ShareIcon } from "../ui/Icons";
+import { CheckIcon, FlagIcon, RetryIcon, ShareIcon } from "../ui/Icons";
 import TextLink from "../ui/TextLink";
 
 type Props = {
@@ -39,9 +39,10 @@ export default function FeedbackSheet(props: Props) {
     Animated.spring(slide, { toValue: 0, useNativeDriver: true, bounciness: 6, speed: 14 }).start();
   }, [slide]);
 
-  const ink = good ? colors.primaryInk : colors.dangerDark;
-  const body = good ? "#1F4A28" : "#6B2A1E";
-  const icon = good ? "#2E8B45" : colors.redBook;
+  // A try-again sheet is warm and quiet, never red and never a cross: a child who was not understood is not wrong.
+  const ink = good ? colors.primaryInk : colors.brown;
+  const body = good ? "#1F4A28" : "#5A3318";
+  const icon = good ? "#2E8B45" : colors.accentDark;
 
   return (
     <Animated.View
@@ -49,14 +50,14 @@ export default function FeedbackSheet(props: Props) {
         styles.sheet,
         {
           paddingBottom: Math.max(insets.bottom, 12) + 14,
-          backgroundColor: good ? colors.primaryBg : colors.dangerBg,
-          borderTopColor: good ? colors.primary : colors.danger,
+          backgroundColor: good ? colors.primaryBg : colors.surface,
+          borderTopColor: good ? colors.primary : colors.accent,
           transform: [{ translateY: slide }],
         },
       ]}
     >
       <View style={styles.titleRow}>
-        <View style={[styles.badge, { backgroundColor: good ? "#2E8B45" : colors.redBook }]}>{good ? <CheckIcon /> : <CrossIcon />}</View>
+        <View style={[styles.badge, { backgroundColor: good ? "#2E8B45" : colors.accent }]}>{good ? <CheckIcon /> : <RetryIcon color={colors.brown} />}</View>
         <Text style={[styles.title, { color: ink }]}>{title}</Text>
         {onShare ? (
           <Pressable onPress={onShare} style={styles.tool} accessibilityRole="button" accessibilityLabel="I-share">
@@ -77,8 +78,8 @@ export default function FeedbackSheet(props: Props) {
       ) : null}
       {children}
       <View style={styles.buttons}>
-        {outlineLabel && onOutline ? <Button3D label={outlineLabel} tone={good ? "outline" : "outlineDanger"} onPress={onOutline} /> : null}
-        <Button3D label={primaryLabel} tone={good ? "primary" : "danger"} onPress={onPrimary} />
+        {outlineLabel && onOutline ? <Button3D label={outlineLabel} tone="outline" onPress={onOutline} /> : null}
+        <Button3D label={primaryLabel} tone={good ? "primary" : "accent"} onPress={onPrimary} />
         {linkLabel && onLink ? <TextLink label={linkLabel} onPress={onLink} color={ink} /> : null}
       </View>
     </Animated.View>

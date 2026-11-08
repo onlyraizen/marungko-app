@@ -1,5 +1,6 @@
 import { requestRecordingPermissionsAsync, setAudioModeAsync, useAudioStream } from "expo-audio";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { PaceMeter, findSpan } from "../speech/pace";
 import { supabase } from "../services/supabase";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
@@ -18,12 +19,26 @@ const ENDPOINT_SENSITIVITY = 0; // -1 to 1; higher means it ends sooner. Do not 
 const NO_SPEECH_MS = 7000;
 const MAX_LISTEN_MS = 12000;
 
+/**
+ * Which words are given to Soniox as hints (context.terms). Hints pull what it hears toward those words, which
+ * helps a quiet child and can also pull a rushed or mumbled attempt onto the target. For the A/B test
+ * (docs/SPEECH-CHECK.md section 4) set EXPO_PUBLIC_STT_CONTEXT in frontend/.env and restart Expo with -c:
+ *   lesson  every item of this lesson (the default, what the app always did)
+ *   target  only the word being practised (narrowest)
+ *   none    no hints at all
+ */
+export type SttContextMode = "lesson" | "target" | "none";
+const rawMode = process.env.EXPO_PUBLIC_STT_CONTEXT?.trim().toLowerCase();
+export const STT_CONTEXT_MODE: SttContextMode = rawMode === "target" || rawMode === "none" ? rawMode : "lesson";
+
 // Backend speech keys are valid for 60 s and single-use; reuse a prepared one only while it is fresh.
 const KEY_MAX_AGE_MS = 40_000;
 // Audio held while the connection opens: 10 s of 16 kHz 16-bit mono. Far more than needed.
 const MAX_QUEUED_BYTES = 320_000;
 
-type Token = { text?: string; is_final?: boolean; confidence?: number };
+// start_ms and end_ms are in a third-party copy of the Soniox schema and marked optional: unverified against the official
+// docs, so they are only logged for comparison; the pace guard measures the microphone audio itself (speech/pace.ts).
+type Token = { text?: string; is_final?: boolean; confidence?: number; start_ms?: number; end_ms?: number };
 type SonioxMessage = {
   tokens?: Token[];
   finished?: boolean;
@@ -89,12 +104,18 @@ export function useLiveTranscription() {
   const noSpeechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finishAfterEndpointRef = useRef<() => void>(() => undefined);
+  // For judging the attempt: loudness per 10 ms (no audio kept) and what the speech service said about each word.
+  const meterRef = useRef(new PaceMeter());
+  const nonFinalConfRef = useRef<number[]>([]);
+  const tokenFirstMsRef = useRef<number | null>(null);
+  const tokenLastMsRef = useRef<number | null>(null);
 
   const { isStreaming, stream } = useAudioStream({
     channels: 1,
     encoding: "int16",
     sampleRate: 16000,
     onBuffer: (buffer) => {
+      if (!stoppedRef.current) meterRef.current.push(new Int16Array(buffer.data, 0, Math.floor(buffer.data.byteLength / 2)));
       const socket = socketRef.current;
       if (socketOpenRef.current && socket && socket.readyState === WebSocket.OPEN) {
         socket.send(buffer.data);
@@ -219,6 +240,7 @@ export function useLiveTranscription() {
 
     let partial = "";
     let sawEndpoint = false;
+    nonFinalConfRef.current = [];
     for (const token of message.tokens ?? []) {
       if (!token.text) continue;
       if (token.text === "<end>") {
@@ -233,6 +255,11 @@ export function useLiveTranscription() {
           clearTimeout(noSpeechTimerRef.current);
           noSpeechTimerRef.current = null;
         }
+      }
+      if (token.text.trim() !== "") {
+        if (typeof token.start_ms === "number") tokenFirstMsRef.current = Math.min(tokenFirstMsRef.current ?? token.start_ms, token.start_ms);
+        if (typeof token.end_ms === "number") tokenLastMsRef.current = Math.max(tokenLastMsRef.current ?? token.end_ms, token.end_ms);
+        if (!token.is_final && typeof token.confidence === "number") nonFinalConfRef.current.push(token.confidence);
       }
       if (token.is_final) {
         finalRef.current += token.text;
@@ -262,7 +289,8 @@ export function useLiveTranscription() {
   };
 
   /** `terms` are the sounds/words the child is expected to say; Soniox uses them as hints. */
-  const start = async (terms: readonly string[]) => {
+  const start = async (lessonTerms: readonly string[], focus?: string) => {
+    const terms = STT_CONTEXT_MODE === "none" ? [] : STT_CONTEXT_MODE === "target" && focus ? [focus] : lessonTerms;
     setError(null);
     setFinalText("");
     setPartialText("");
@@ -272,6 +300,10 @@ export function useLiveTranscription() {
     finalRef.current = "";
     confSumRef.current = 0;
     confCountRef.current = 0;
+    meterRef.current.reset();
+    nonFinalConfRef.current = [];
+    tokenFirstMsRef.current = null;
+    tokenLastMsRef.current = null;
     stoppedRef.current = false;
     speechRef.current = false;
     queueRef.current = [];
@@ -308,7 +340,7 @@ export function useLiveTranscription() {
               sample_rate: 16000,
               num_channels: 1,
               language_hints: ["tl"],
-              context: { terms },
+              ...(terms.length > 0 ? { context: { terms } } : {}),
               enable_endpoint_detection: true,
               endpoint_latency_adjustment_level: ENDPOINT_LATENCY_LEVEL,
               endpoint_sensitivity: ENDPOINT_SENSITIVITY,
@@ -365,7 +397,28 @@ export function useLiveTranscription() {
     finishAfterEndpointRef.current();
   }, []);
 
+  /**
+   * What the last attempt looked like, read when it is judged. spanMs is measured on the microphone audio on the
+   * phone (first sound to last sound); tokenSpanMs is the speech service's own timing, if it sent any.
+   * confidence counts the final words plus the latest not-yet-final ones, because a correct answer is often
+   * accepted before the service marks its words final.
+   */
+  const readAttempt = useCallback(() => {
+    const confidences: number[] = [];
+    if (confCountRef.current > 0) confidences.push(confSumRef.current / confCountRef.current);
+    confidences.push(...nonFinalConfRef.current);
+    const span = findSpan(meterRef.current.frames);
+    const first = tokenFirstMsRef.current;
+    const last = tokenLastMsRef.current;
+    return {
+      spanMs: span?.spanMs ?? null,
+      tokenSpanMs: first !== null && last !== null ? last - first : null,
+      confidence: confidences.length > 0 ? confidences.reduce((a, b) => a + b, 0) / confidences.length : null,
+    };
+  }, []);
+
   return {
+    readAttempt,
     status,
     finalText,
     partialText,

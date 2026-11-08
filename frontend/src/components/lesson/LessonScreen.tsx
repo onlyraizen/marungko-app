@@ -1,11 +1,13 @@
 import { FACTS, audioKey, matchUtterance, type MatchResult } from "@marungko/shared";
 import { acceptedFor } from "../../content/accepted";
+import { decideAttempt, type Reason } from "../../speech/attempt";
+import { WORD_MS } from "../../speech/wordPace";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { buildTapQuiz } from "../../content/quiz";
 import { syllabify } from "../../content/syllables";
 import { invalidatePlaybackMode, useGuideAudio } from "../../hooks/useGuideAudio";
-import { useLiveTranscription } from "../../hooks/useLiveTranscription";
+import { STT_CONTEXT_MODE, useLiveTranscription } from "../../hooks/useLiveTranscription";
 import { playSfx } from "../../hooks/useSfx";
 import type { CompleteResult } from "../../services/progress";
 import { useAppStore } from "../../store/useAppStore";
@@ -56,7 +58,7 @@ const EARLY_ACCEPT_MS = 450;
  * then a tap-the-syllables quiz, then the results.
  */
 export default function LessonScreen({ title, items, words, baseYuzu, review = false, onDone, onAttempt, onQuizAnswer, onNote, onComplete }: Props) {
-  const { finalText, partialText, error, busy, finished, heardSpeech, isListening, prepare, start, stop, finishNow, confidence } = useLiveTranscription();
+  const { finalText, partialText, error, busy, finished, heardSpeech, isListening, prepare, start, stop, finishNow, confidence, readAttempt } = useLiveTranscription();
   const slow = useAppStore((state) => state.slowGuide);
   const seenTutorial = useAppStore((state) => state.seenMicTutorial);
   const setSeenTutorial = useAppStore((state) => state.setSeenMicTutorial);
@@ -68,6 +70,10 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
   const [phase, setPhase] = useState<Phase>("practice");
   const [index, setIndex] = useState(0);
   const [result, setResult] = useState<MatchResult | null>(null);
+  // Why the last attempt was not a pass ("too-fast" gets the slow-down message), and how many tries in a row this word has had.
+  const [reason, setReason] = useState<Reason>("ok");
+  const [misses, setMisses] = useState(0);
+  const [devLine, setDevLine] = useState("");
   const [praise, setPraise] = useState<string>(PRAISE[0]);
   const [combo, setCombo] = useState(0);
   const [earned, setEarned] = useState(0);
@@ -111,8 +117,38 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
     if (finished && awaitingResult.current && target !== undefined) {
       awaitingResult.current = false;
       const heardText = `${finalText}${partialText}`;
-      const next = matchUtterance(heardText, target, acceptedFor(target));
+      const attempt = readAttempt();
+      const decision = decideAttempt({
+        heard: heardText,
+        target,
+        accepted: acceptedFor(target),
+        syllables: syllabify(target).length,
+        spanMs: attempt.spanMs,
+        modelMs: WORD_MS[audioKey(target)],
+        confidence: attempt.confidence,
+      });
+      const next = decision.result;
       setResult(next);
+      setReason(decision.reason);
+      setMisses((n) => (next.kind === "correct" ? 0 : n + 1));
+      if (__DEV__) {
+        // Numbers only, never audio: copy these from the Metro console to calibrate (docs/SPEECH-CHECK.md section 8).
+        const row = {
+          target,
+          context: STT_CONTEXT_MODE,
+          heard: next.heard,
+          kind: next.kind,
+          reason: decision.reason,
+          spanMs: attempt.spanMs,
+          tokenSpanMs: attempt.tokenSpanMs,
+          ratio: decision.pace ? Number(decision.pace.ratio.toFixed(2)) : null,
+          sps: decision.pace ? Number(decision.pace.syllablesPerSecond.toFixed(1)) : null,
+          confidence: attempt.confidence === null ? null : Number(attempt.confidence.toFixed(2)),
+          lowConfidence: decision.lowConfidence,
+        };
+        console.log(`[speech] ${JSON.stringify(row)}`);
+        setDevLine(`${attempt.spanMs ?? "-"} ms, x${row.ratio ?? "-"} of the model, ${row.sps ?? "-"} syll/s`);
+      }
       if (next.kind === "correct") {
         if (!correctItems.current.has(target)) setEarned((n) => n + 1);
         correctItems.current.add(target);
@@ -124,7 +160,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
       }
       onAttempt?.(target, next.heard, next.kind);
     }
-  }, [finished, finalText, partialText, target, onAttempt]);
+  }, [finished, finalText, partialText, target, onAttempt, readAttempt]);
 
   // The moment the words match, accept them: no need to wait for the speech service to notice a pause.
   useEffect(() => {
@@ -142,8 +178,17 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
       const timer = setTimeout(() => guide.say(praise), 380);
       return () => clearTimeout(timer);
     }
-    void playSfx("wrong", 0.6);
-    const timer = setTimeout(() => guide.say(FEEDBACK[result.kind].voice), 520);
+    // Too fast is not a mistake: no buzzer, just Capi asking to slow down. From the second miss in a row Capi also
+    // says the word again, slowly, so the child hears it once more before trying.
+    if (reason !== "too-fast") void playSfx("wrong", 0.6);
+    const lines =
+      misses >= 3
+        ? ["Okay lang! Tuloy tayo."]
+        : reason === "too-fast"
+          ? [FEEDBACK.pace.voice, "Sabihin natin nang paisa-isang tunog."]
+          : [FEEDBACK[result.kind].voice];
+    if (misses === 2 && target !== undefined) lines.push(target);
+    const timer = setTimeout(() => guide.sayAll(lines), 520);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, guide.say]);
@@ -173,14 +218,17 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
     guide.stop();
     invalidatePlaybackMode();
     setResult(null);
+    setReason("ok");
     setFlagged(false);
     awaitingResult.current = true;
-    void start(items);
+    void start(items, target);
   };
 
   const onNext = () => {
     guide.stop();
     setResult(null);
+    setReason("ok");
+    setMisses(0);
     setFlagged(false);
     setIndex((current) => current + 1);
   };
@@ -264,7 +312,15 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
   const parts = syllabify(target);
   const slash = parts.map((part) => `/${part}/`).join(" ... ");
   const heardLine = result && result.heard !== "" ? `Narinig ni Capi: ${result.heard}` : "Walang narinig si Capi.";
-  const dev = __DEV__ ? <Text style={styles.dev}>Linaw: {confidence === null ? "-" : `${Math.round(confidence * 100)}%`}</Text> : null;
+  const dev = __DEV__ ? (
+    <Text style={styles.dev}>
+      Linaw: {confidence === null ? "-" : `${Math.round(confidence * 100)}%`}
+      {devLine !== "" ? `  |  ${devLine}` : ""}
+    </Text>
+  ) : null;
+  // After three tries in a row the child is never kept stuck: moving on is the main button.
+  const moveOn = misses >= 3;
+  const tooFast = reason === "too-fast";
   const last = index + 1 >= items.length;
 
   const sheet =
@@ -294,13 +350,13 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
       ) : (
         <FeedbackSheet
           good={false}
-          title={result.kind === "almost" ? "Halos tama!" : "Subukan ulit"}
-          kicker="Subukan ulit:"
-          line={`${slash}, dahan-dahan lang`}
-          primaryLabel="Subukan muli"
-          onPrimary={onMic}
-          linkLabel="Laktawan"
-          onLink={onSkip}
+          title={moveOn ? "Okay lang! Tuloy tayo." : tooFast ? "Dahan-dahan lang tayo" : result.kind === "almost" ? "Halos tama!" : "Subukan ulit"}
+          kicker={tooFast ? "Tama ang salita! Sabihin natin nang paisa-isang tunog:" : "Subukan ulit:"}
+          line={tooFast ? `${slash}` : `${slash}, dahan-dahan lang`}
+          primaryLabel={moveOn ? "Tuloy tayo" : "Subukan muli"}
+          onPrimary={moveOn ? onSkip : onMic}
+          linkLabel={moveOn ? "Subukan muli" : "Laktawan"}
+          onLink={moveOn ? onMic : onSkip}
           onFlag={() => {
             setFlagged(true);
             onNote?.(target, "na-flag");
