@@ -1,6 +1,7 @@
 import type { Unit } from "@marungko/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type ScrollViewInstance } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppStore } from "../../store/useAppStore";
 import { book } from "../../theme/book";
 import { colors } from "../../theme/colors";
@@ -38,6 +39,7 @@ type Placed = { unit: Unit; index: number; top: number; groupTitle: string | nul
  * that hops from one to the next. There are no pages to turn; a lesson opens once the one before it is done.
  */
 export default function PondPath({ childId, view, allUnits, progress, unlockAll, onBack, onStart }: Props) {
+  const insets = useSafeAreaInsets();
   const [width, setWidth] = useState(0);
   const scroller = useRef<ScrollViewInstance>(null);
   const [selected, setSelected] = useState<Unit | null>(null);
@@ -120,7 +122,7 @@ export default function PondPath({ childId, view, allUnits, progress, unlockAll,
 
   return (
     <View style={styles.root}>
-      <View style={[styles.banner, { backgroundColor: view.look.face, borderBottomColor: view.look.lip }]}>
+      <View style={[styles.banner, { backgroundColor: view.look.face, borderBottomColor: view.look.lip, marginTop: insets.top + 8 }]}>
         <Pressable onPress={onBack} style={[styles.backBtn, { backgroundColor: view.look.lip }]} accessibilityRole="button" accessibilityLabel="Bumalik sa mga libro">
           <BackIcon size={22} color="#FFFFFF" />
         </Pressable>

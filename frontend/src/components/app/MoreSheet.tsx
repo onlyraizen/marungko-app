@@ -10,7 +10,7 @@ const ROWS: { id: MoreChoice; icon: IconName; label: string }[] = [
   { id: "profile", icon: "profile", label: "Profile" },
   { id: "review", icon: "balikAral", label: "Balik-aral" },
   { id: "awards", icon: "tagumpay", label: "Mga Tagumpay" },
-  { id: "settings", icon: "settings", label: "Mga Setting" },
+  { id: "settings", icon: "settings", label: "Settings" },
 ];
 
 /** The "Higit pa" menu: a sheet that rises over the screen, just above the tab bar. */
@@ -21,7 +21,7 @@ export default function MoreSheet({ onChoose, onClose }: { onChoose: (choice: Mo
   }, [rise]);
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      <Pressable style={styles.dim} onPress={onClose} accessibilityLabel="Isara ang menu" />
+      <Pressable style={styles.dim} onPress={onClose} accessibilityLabel="Close menu" />
       <Animated.View style={[styles.sheet, { transform: [{ translateY: rise }] }]}>
         <View style={styles.handle} />
         {ROWS.map((row, i) => (

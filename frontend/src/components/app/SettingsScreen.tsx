@@ -32,31 +32,31 @@ type Props = {
 };
 
 const ACCOUNT: { id: Route; label: string }[] = [
-  { id: "prefs", label: "Mga Kagustuhan" },
+  { id: "prefs", label: "Preferences" },
   { id: "profile", label: "Profile" },
-  { id: "notif", label: "Mga Abiso" },
-  { id: "sound", label: "Tunog at Boses" },
-  { id: "parent", label: "Para sa Magulang" },
-  { id: "privacy", label: "Mga Setting ng Privacy" },
+  { id: "notif", label: "Notifications" },
+  { id: "sound", label: "Sound & Voice" },
+  { id: "parent", label: "For Parents" },
+  { id: "privacy", label: "Privacy Settings" },
 ];
 const SUPPORT: { id: Route; label: string }[] = [
-  { id: "help", label: "Tulong" },
-  { id: "feedback", label: "Puna" },
+  { id: "help", label: "Help" },
+  { id: "feedback", label: "Feedback" },
 ];
 const TITLES: Record<Route, string> = {
-  root: "Mga Setting",
-  prefs: "Mga Kagustuhan",
+  root: "Settings",
+  prefs: "Preferences",
   profile: "Profile",
-  notif: "Mga Abiso",
-  sound: "Tunog at Boses",
-  parent: "Para sa Magulang",
-  privacy: "Mga Setting ng Privacy",
-  help: "Tulong",
-  feedback: "Puna",
-  terms: "Mga Tuntunin",
+  notif: "Notifications",
+  sound: "Sound & Voice",
+  parent: "For Parents",
+  privacy: "Privacy Settings",
+  help: "Help",
+  feedback: "Feedback",
+  terms: "Terms",
 };
 
-/** "Mga Setting": the list from the design, with a small page behind each row. */
+/** "Settings": the list from the design, with a small page behind each row. */
 export default function SettingsScreen(props: Props) {
   const insets = useSafeAreaInsets();
   const [route, setRoute] = useState<Route>("root");
@@ -70,7 +70,7 @@ export default function SettingsScreen(props: Props) {
           onPress={() => (root ? props.onClose() : setRoute("root"))}
           style={styles.headerButton}
           accessibilityRole="button"
-          accessibilityLabel={root ? "Isara" : "Bumalik"}
+          accessibilityLabel={root ? "Close" : "Back"}
         >
           {root ? <CloseIcon /> : <BackIcon />}
         </Pressable>
@@ -93,17 +93,17 @@ function Root({ onLogout, go }: Props & { go: (route: Route) => void }) {
     <>
       <Text style={styles.section}>ACCOUNT</Text>
       <Group rows={ACCOUNT} go={go} />
-      <Text style={styles.section}>SUPORTA</Text>
+      <Text style={styles.section}>SUPPORT</Text>
       <Group rows={SUPPORT} go={go} />
 
       <View style={styles.sleepy}>
         <CapiPeek peek="sleepy" width={150} />
       </View>
-      <Button3D label="Mag-log out" tone="outlineDanger" onPress={onLogout} />
+      <Button3D label="Log out" tone="outlineDanger" onPress={onLogout} />
       <View style={styles.legal}>
-        <TextLink label="Mga Tuntunin" onPress={() => go("terms")} />
-        <TextLink label="Patakaran sa Privacy" onPress={() => go("privacy")} />
-        <TextLink label="Mga Pasasalamat" onPress={() => Alert.alert("Mga Pasasalamat", CREDITS)} />
+        <TextLink label="Terms" onPress={() => go("terms")} />
+        <TextLink label="Privacy Policy" onPress={() => go("privacy")} />
+        <TextLink label="Credits" onPress={() => Alert.alert("Credits", CREDITS)} />
       </View>
       <Text style={styles.version}>Basa-Bata v1.0</Text>
     </>
@@ -145,8 +145,8 @@ function AnimationsToggle() {
   const setAnimations = useAppStore((state) => state.setAnimations);
   return (
     <ToggleRow
-      title="Mga animasyon"
-      text="Maiikling animasyon kapag nagbubukas ng libro o nagsisimula ng aralin. Patayin kung bumabagal ang telepono."
+      title="Animations"
+      text="Short animations when a book opens or a lesson starts. Turn them off if your phone feels slow."
       value={animations}
       onChange={setAnimations}
     />
@@ -160,16 +160,16 @@ function Page({ route, go, onTutorial, ...p }: Props & { route: Route; go: (rout
       return (
         <>
           <ToggleRow
-            title="Mabagal na boses"
-            text="Mas mabagal magsalita si Capi para marinig ang bawat tunog."
+            title="Slow voice"
+            text="Capi talks more slowly so every sound is easy to hear."
             value={p.slow}
             onChange={p.onSlow}
           />
           {route === "prefs" ? <AnimationsToggle /> : null}
           {route === "sound" ? (
             <Text style={styles.body}>
-              Pindutin lang ang mikropono nang isang beses. Kusa itong titigil kapag tapos nang magsalita ang bata. Kung hindi gumagana,
-              payagan ang mikropono sa mga setting ng telepono.
+              Tap the microphone once. It stops by itself when the child finishes speaking. If it does not work, allow the microphone
+              in your phone settings.
             </Text>
           ) : null}
         </>
@@ -177,30 +177,30 @@ function Page({ route, go, onTutorial, ...p }: Props & { route: Route; go: (rout
     case "profile":
       return (
         <>
-          <Info label="Mag-aaral" value={p.childName} />
-          <Info label="Email ng magulang" value={p.email || "-"} />
-          <Button3D label="Palitan ang mag-aaral" tone="info" onPress={p.onSwitchChild} />
+          <Info label="Student" value={p.childName} />
+          <Info label="Parent email" value={p.email || "-"} />
+          <Button3D label="Switch student" tone="info" onPress={p.onSwitchChild} />
         </>
       );
     case "notif":
       return (
         <View style={styles.soon}>
           <Image source={PARENT_ICONS.bell} contentFit="contain" style={styles.soonIcon} />
-          <Text style={styles.body}>Malapit na! Dito mo maaayos ang mga paalala para hindi mawala ang streak.</Text>
+          <Text style={styles.body}>Coming soon! You will be able to set reminders here so the streak is not lost.</Text>
         </View>
       );
     case "feedback":
-      return <Text style={styles.body}>Malapit na! Dito ka makakapagpadala ng puna tungkol sa Basa-Bata.</Text>;
+      return <Text style={styles.body}>Coming soon! You will be able to send feedback about Basa-Bata here.</Text>;
     case "help":
       return (
         <>
           <Text style={styles.body}>
-            Mag-aral kasama ang bata: pakinggan si Capi, ulitin ang salita, at pindutin ang mga pantig na naririnig.
+            Learn together with your child: listen to Capi, repeat the word, and tap the syllables you hear.
           </Text>
           <Text style={styles.body}>
-            Kapag hindi marinig ng telepono ang bata, subukan sa tahimik na lugar at ilapit nang kaunti ang telepono.
+            If the phone cannot hear your child, try a quiet place and hold the phone a little closer.
           </Text>
-          <Button3D label="Panoorin ang tutorial sa mikropono" tone="info" onPress={onTutorial} />
+          <Button3D label="Watch the microphone tutorial" tone="info" onPress={onTutorial} />
         </>
       );
     case "privacy":
@@ -213,17 +213,17 @@ function Page({ route, go, onTutorial, ...p }: Props & { route: Route; go: (rout
           <View style={styles.reportRow}>
             <Image source={PARENT_ICONS.report} contentFit="contain" style={styles.reportIcon} />
             <View style={styles.reportButton}>
-              <Button3D label="Ulat ng pag-unlad" tone="info" onPress={p.onOpenReport} />
+              <Button3D label="Progress report" tone="info" onPress={p.onOpenReport} />
             </View>
           </View>
           <ToggleRow
-            title="Buksan lahat ng aralin"
-            text="Para sa demo: bukas ang lahat ng libro at aralin kahit hindi pa natatapos ang nauna."
+            title="Unlock all lessons"
+            text="For demos: every book and lesson is open even if the one before is not finished."
             value={p.unlockAll}
             onChange={p.onUnlockAll}
           />
-          <Text style={styles.section}>PARA SA MGA DEVELOPER</Text>
-          <Button3D label="Suriin ang backend" tone="neutral" small onPress={p.onCheckBackend} />
+          <Text style={styles.section}>FOR DEVELOPERS</Text>
+          <Button3D label="Check backend" tone="neutral" small onPress={p.onCheckBackend} />
           {p.check ? <Text style={styles.body}>{p.check}</Text> : null}
           <Button3D label="Live transcript" tone="neutral" small onPress={p.onOpenLive} />
           <Button3D label="Mic test" tone="neutral" small onPress={p.onOpenMic} />
@@ -243,10 +243,10 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
-const CREDITS = "Basa-Bata ay ginawa nina Raizen at Karylle Ann Herrera ng ICI College. Ang mga larawan at si Capi ay orihinal na gawa para sa proyektong ito.";
+const CREDITS = "Basa-Bata was made by Raizen and Karylle Ann Herrera of ICI College. The pictures and Capi are original artwork made for this project.";
 const PRIVACY =
-  "Draft: Palayaw lang ng bata ang kailangan namin. Ang boses ay ginagamit lang para suriin ang binabasa at hindi ito itinatabi. Ang email ng magulang ay ginagamit lang para sa pag-sign in. Susuriin muna ito ng guro at ng may-akda bago ang opisyal na paglabas.";
-const TERMS = "Draft: Gamitin ang Basa-Bata para sa pag-aaral ng pagbasa. Susuriin muna ito ng guro at ng may-akda bago ang opisyal na paglabas.";
+  "Draft: We only need your child's nickname. The voice is used only to check what is being read and is not saved. The parent's email is used only for signing in. A teacher and the authors will review this before the official release.";
+const TERMS = "Draft: Use Basa-Bata for learning to read. A teacher and the authors will review this before the official release.";
 
 const styles = StyleSheet.create({
   reportRow: { flexDirection: "row", alignItems: "center", gap: 12 },
