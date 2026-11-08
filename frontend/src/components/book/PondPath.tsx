@@ -1,6 +1,6 @@
 import type { Unit } from "@marungko/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type ScrollViewInstance } from "react-native";
 import { useAppStore } from "../../store/useAppStore";
 import { book } from "../../theme/book";
 import { colors } from "../../theme/colors";
@@ -39,7 +39,7 @@ type Placed = { unit: Unit; index: number; top: number; groupTitle: string | nul
  */
 export default function PondPath({ childId, view, allUnits, progress, unlockAll, onBack, onStart }: Props) {
   const [width, setWidth] = useState(0);
-  const scroller = useRef<ScrollView>(null);
+  const scroller = useRef<ScrollViewInstance>(null);
   const [selected, setSelected] = useState<Unit | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [shake, setShake] = useState<{ id: string; n: number }>({ id: "", n: 0 });
@@ -203,7 +203,7 @@ export default function PondPath({ childId, view, allUnits, progress, unlockAll,
 }
 
 type ScrollProps = {
-  scroller: React.RefObject<ScrollView | null>;
+  scroller: React.RefObject<ScrollViewInstance | null>;
   width: number;
   contentH: number;
   banners: { title: string; top: number }[];
