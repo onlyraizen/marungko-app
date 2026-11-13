@@ -1,8 +1,10 @@
+import { Image } from "expo-image";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../../theme/colors";
 import { font } from "../../theme/fonts";
+import { PARENT_ICONS } from "../art/assets";
 import Button3D from "../ui/Button3D";
 import { CheckIcon, FlagIcon, RetryIcon, ShareIcon } from "../ui/Icons";
 import TextLink from "../ui/TextLink";
@@ -26,11 +28,14 @@ type Props = {
   onShare?: () => void;
   onFlag?: () => void;
   flagged?: boolean;
+  /** The small lock: opens the parent's "Tama ito" (hold, then confirm). */
+  onParent?: () => void;
+  parentLabel?: string;
 };
 
 /** The sheet that slides up after an answer: green when it was right, coral when it was not. */
 export default function FeedbackSheet(props: Props) {
-  const { good, title, kicker, line, children, primaryLabel, onPrimary, outlineLabel, onOutline, linkLabel, onLink, onShare, onFlag, flagged } = props;
+  const { good, title, kicker, line, children, primaryLabel, onPrimary, outlineLabel, onOutline, linkLabel, onLink, onShare, onFlag, flagged, onParent, parentLabel } = props;
   const insets = useSafeAreaInsets();
   const slide = useRef(new Animated.Value(360)).current;
 
@@ -62,6 +67,11 @@ export default function FeedbackSheet(props: Props) {
         {onShare ? (
           <Pressable onPress={onShare} style={styles.tool} accessibilityRole="button" accessibilityLabel="I-share">
             <ShareIcon color={icon} />
+          </Pressable>
+        ) : null}
+        {onParent ? (
+          <Pressable onPress={onParent} style={styles.tool} accessibilityRole="button" accessibilityLabel={parentLabel ?? "Tama ito (para sa magulang)"}>
+            <Image source={PARENT_ICONS.lock} contentFit="contain" style={{ width: 26, height: 26 }} />
           </Pressable>
         ) : null}
         {onFlag ? (

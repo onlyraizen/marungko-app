@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LANGUAGES, useT, type Translate } from "../../i18n";
@@ -21,6 +22,7 @@ import { Capi } from "../art/Capi";
 import Button3D from "../ui/Button3D";
 import { BackIcon, EyeIcon } from "../ui/Icons";
 import TextLink from "../ui/TextLink";
+import { CodeBoxes, CodeKeypad } from "./CodeKeypad";
 import { dark, darkStyles, DarkPage, HelloCapi } from "./dark";
 
 type Step = "welcome" | "meet" | "saved" | "form" | "code";
@@ -296,7 +298,6 @@ export function Form({
         <ScrollView contentContainerStyle={styles.formScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.headerRow}>
             <BackButton onPress={onBack} />
-            <LanguageSwitch />
           </View>
           <View style={styles.peekWrap}>
             <CapiPeek peek="thinking" width={150} />
@@ -363,13 +364,17 @@ export function Form({
 export function CodeStep({ email, purpose, onBack }: { email: string; purpose: CodeFor; onBack: () => void }) {
   const t = useT();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const remember = useAppStore((state) => state.rememberAccount);
-  const [code, setCode] = useState("");
+  const [digits, setDigits] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [wrong, setWrong] = useState(false);
   const [wait, setWait] = useState(RESEND_SECONDS);
+  // A forgotten password has two steps: the code (on the number pad), then the new password (on the keyboard).
+  const [phase, setPhase] = useState<"code" | "password">("code");
   const recovery = purpose === "recovery";
 
   // The code was just sent: count down before another one may be asked for.
@@ -379,12 +384,27 @@ export function CodeStep({ email, purpose, onBack }: { email: string; purpose: C
     return () => clearTimeout(timer);
   }, [wait]);
 
-  const digits = code.replace(/\D/g, "");
-  const ready = digits.length >= 6 && (!recovery || password.length > 0);
+  const press = (digit: string) => {
+    // After a wrong code the next key starts a fresh one.
+    const base = wrong ? "" : digits;
+    setWrong(false);
+    setMessage(null);
+    if (base.length < 6) setDigits(base + digit);
+    else setDigits(base);
+  };
+  const erase = () => {
+    setWrong(false);
+    setMessage(null);
+    setDigits((current) => (wrong ? "" : current.slice(0, -1)));
+  };
 
   const confirm = async () => {
     if (digits.length < 6) {
       setMessage(t("codeBadLength"));
+      return;
+    }
+    if (recovery && phase === "code") {
+      setPhase("password");
       return;
     }
     if (recovery && password.length < 8) {
@@ -397,6 +417,9 @@ export function CodeStep({ email, purpose, onBack }: { email: string; purpose: C
     if (error) {
       setBusy(false);
       setMessage(friendly(error, t));
+      setWrong(true);
+      // A wrong code on a forgotten password goes back to the number pad.
+      if (recovery) setPhase("code");
       return;
     }
     // Signed in now. For a forgotten password the new one is saved straight away; if that fails, sign out so the
@@ -417,41 +440,30 @@ export function CodeStep({ email, purpose, onBack }: { email: string; purpose: C
   const resend = async () => {
     if (wait > 0) return;
     setMessage(null);
+    setWrong(false);
     const { error } = recovery ? await supabase.auth.resetPasswordForEmail(email) : await supabase.auth.resend({ type: "signup", email });
     if (error) {
       setMessage(friendly(error, t));
       return;
     }
+    setDigits("");
     setWait(RESEND_SECONDS);
     setMessage(t("codeResent"));
   };
 
-  return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <DarkPage scene="plain" style={{ paddingTop: insets.top + 16 }}>
-        <ScrollView contentContainerStyle={styles.formScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={styles.headerRow}>
-            <BackButton onPress={onBack} />
-            <LanguageSwitch />
-          </View>
-          <View style={styles.peekWrap}>
-            <CapiPeek peek="curious" width={150} />
-          </View>
-          <Text style={darkStyles.title}>{recovery ? t("resetTitle") : t("codeTitle")}</Text>
-          <Text style={darkStyles.body}>{t(recovery ? "resetBody" : "codeBody", { email })}</Text>
-
-          <TextInput
-            style={[styles.field, styles.code]}
-            placeholder={t("codePlaceholder")}
-            placeholderTextColor={dark.muted}
-            keyboardType="number-pad"
-            autoComplete="one-time-code"
-            textContentType="oneTimeCode"
-            maxLength={10}
-            value={code}
-            onChangeText={setCode}
-          />
-          {recovery ? (
+  if (phase === "password") {
+    return (
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <DarkPage scene="plain" style={{ paddingTop: insets.top + 16 }}>
+          <ScrollView contentContainerStyle={styles.formScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <View style={styles.headerRow}>
+              <BackButton onPress={() => setPhase("code")} />
+            </View>
+            <View style={styles.peekWrap}>
+              <CapiPeek peek="curious" width={150} />
+            </View>
+            <Text style={darkStyles.title}>{t("resetTitle")}</Text>
+            <Text style={darkStyles.body}>{t("newPasswordBody")}</Text>
             <View style={styles.passRow}>
               <TextInput
                 style={[styles.field, styles.passField]}
@@ -467,20 +479,33 @@ export function CodeStep({ email, purpose, onBack }: { email: string; purpose: C
                 <EyeIcon off={!show} />
               </Pressable>
             </View>
-          ) : null}
+            {message ? <Text style={styles.message}>{message}</Text> : null}
+            {busy ? <ActivityIndicator color={dark.green} style={styles.spinner} /> : <Button3D label={t("resetButton")} disabled={password.length === 0} onPress={confirm} />}
+          </ScrollView>
+        </DarkPage>
+      </KeyboardAvoidingView>
+    );
+  }
 
-          {message ? <Text style={styles.message}>{message}</Text> : null}
-
-          {busy ? (
-            <ActivityIndicator color={dark.green} style={styles.spinner} />
-          ) : (
-            <Button3D label={recovery ? t("resetButton") : t("codeButton")} disabled={!ready} onPress={confirm} />
-          )}
-          <TextLink label={wait > 0 ? t("codeResendWait", { seconds: wait }) : t("codeResend")} color={dark.blue} onPress={resend} />
-          <Text style={styles.terms}>{t("codeNotReceived")}</Text>
-        </ScrollView>
-      </DarkPage>
-    </KeyboardAvoidingView>
+  // Capi shrinks (or leaves) on short phones so the number pad never covers the button.
+  const capiSize = Math.max(0, Math.min(150, height - 294 - insets.top - insets.bottom - 372));
+  const resendText = wait > 0 ? t("codeResendWait", { seconds: wait }) : t("codeResend");
+  return (
+    <DarkPage scene="clouds" style={{ paddingTop: insets.top + 6 }}>
+      <View style={styles.headerRow}>
+        <BackButton onPress={onBack} />
+      </View>
+      <View style={styles.codeBody}>
+        {capiSize >= 80 ? <Capi pose={wrong ? "tryAgain" : "sign"} size={capiSize} /> : null}
+        <Text style={darkStyles.title}>{recovery ? t("resetTitle") : t("codeTitle")}</Text>
+        <Text style={[darkStyles.body, { textAlign: "center" }]}>{t("codeSent", { email })}</Text>
+        <CodeBoxes digits={digits} wrong={wrong} />
+        {message ? <Text style={[styles.message, { textAlign: "center" }]}>{message}</Text> : null}
+        <TextLink label={resendText} color={wait > 0 ? dark.muted : dark.blue} onPress={resend} />
+        {busy ? <ActivityIndicator color={dark.green} style={styles.spinner} /> : <Button3D label={recovery ? t("continueButton") : t("codeButton")} disabled={digits.length < 6} onPress={confirm} style={{ alignSelf: "stretch" }} />}
+      </View>
+      <CodeKeypad onDigit={press} onBack={erase} disabled={busy} />
+    </DarkPage>
   );
 }
 
@@ -495,6 +520,7 @@ function BackButton({ onPress }: { onPress: () => void }) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: dark.bg },
+  codeBody: { alignItems: "center", gap: 10 },
   hero: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10 },
   brand: { fontFamily: font.display, fontSize: 44, lineHeight: 62, color: dark.text, includeFontPadding: false },
   actions: { gap: 14 },

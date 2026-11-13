@@ -21,7 +21,7 @@ export const dark = {
   blue: "#14688F",
 } as const;
 
-export type Scene = "pond" | "plain" | "tall" | "none";
+export type Scene = "pond" | "plain" | "tall" | "clouds" | "none";
 
 /** Clouds on top and the pond along the bottom, behind everything (design: Welcome, Details, Loading). */
 function Scenery({ scene }: { scene: Scene }) {
@@ -37,7 +37,7 @@ function Scenery({ scene }: { scene: Scene }) {
       {clouds ? (
         <Image source={AUTH_BG.clouds} contentFit="fill" onError={() => setClouds(false)} style={{ position: "absolute", left: 0, top: 0, width, height: (240 / 390) * width }} />
       ) : null}
-      {pondOk ? (
+      {pondOk && scene !== "clouds" ? (
         <Image source={pond} contentFit="fill" onError={() => setPondOk(false)} style={{ position: "absolute", left: 0, bottom: 0, width, height: ratio * width }} />
       ) : null}
     </View>

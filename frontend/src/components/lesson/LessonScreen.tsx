@@ -21,6 +21,7 @@ import LessonResult from "./LessonResult";
 import { FEEDBACK, PRAISE, praiseAt } from "./lessonText";
 import MicTutorial from "./MicTutorial";
 import { hasPicture } from "./pictures";
+import ParentOverride from "./ParentOverride";
 import PartIntro from "./PartIntro";
 import { exampleFor, pictureOf } from "./pictures";
 import RepeatView from "./RepeatView";
@@ -113,6 +114,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
   const [summary, setSummary] = useState<LessonSummary | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [flagged, setFlagged] = useState(false);
+  const [parentOpen, setParentOpen] = useState(false);
   const awaitingResult = useRef(false);
   const reported = useRef(false);
   const correctItems = useRef(new Set<string>());
@@ -316,9 +318,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
         part={part}
         number={partIndex + 1}
         total={parts.length}
-        progress={total > 0 ? before / total : 0}
-        combo={combo}
-        yuzu={baseYuzu + earned}
+        onHear={(item) => guide.say(item)}
         onStart={() => setPhase("practice")}
         onClose={close}
         coachVoice={coachVoice}
@@ -374,6 +374,24 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
       />
     );
   }
+
+  /** A parent says the word was right (the app did not understand the child). Counted like a correct answer, and noted. */
+  const acceptByParent = () => {
+    if (target === undefined) return;
+    setParentOpen(false);
+    guide.stop();
+    if (!correctItems.current.has(target)) setEarned((n) => n + 1);
+    correctItems.current.add(target);
+    setPracticeCorrect(correctItems.current.size);
+    setPraise(praiseAt(praiseCount.current, guide.has));
+    praiseCount.current += 1;
+    setCombo((n) => n + 1);
+    setMisses(0);
+    setReason("ok");
+    setResult({ kind: "correct", heard: result?.heard ?? "", expected: target });
+    onAttempt?.(target, result?.heard ?? "", "correct");
+    onNote?.(target, "magulang-tama");
+  };
 
   if (practiceDone || target === undefined) return <View style={styles.root} />;
 
@@ -443,6 +461,11 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
             onNote?.(target, "na-flag");
           }}
           flagged={flagged}
+          onParent={() => {
+            guide.stop();
+            setParentOpen(true);
+          }}
+          parentLabel={t("parentLock")}
         >
           <Text style={styles.heard}>{heardLine}</Text>
           {dev}
@@ -474,6 +497,13 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
       sheet={sheet}
       coachVoice={coachVoice}
     />
+      <ParentOverride
+        visible={parentOpen}
+        dotted={targetSyllables.join("·")}
+        onHear={() => guide.sayAll([target])}
+        onConfirm={acceptByParent}
+        onClose={() => setParentOpen(false)}
+      />
       {tutorial ? (
         <MicTutorial
           onClose={() => {
