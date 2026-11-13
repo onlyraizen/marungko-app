@@ -18,17 +18,29 @@ const ALL_SYLLABLES: readonly string[] = [
   ...new Set([...UNITS.flatMap((unit) => unit.syllables), ...UNITS.flatMap((unit) => unit.words).flatMap(syllabify)]),
 ].filter((syllable) => syllable.length >= 2 && syllable.length <= 3);
 
+/** How many questions go in each part's quiz. */
+export const QUIZ_QUESTIONS = 3;
+
+const quizEligible = (word: string): boolean => {
+  if (word.includes(" ")) return false;
+  const n = syllabify(word).length;
+  return n >= 1 && n <= 4;
+};
+
+/** How many questions a part's quiz will have (so the progress bar can be worked out before it is built). */
+export function quizSize(items: readonly string[], count = QUIZ_QUESTIONS): number {
+  return Math.min(count, items.filter(quizEligible).length);
+}
+
 /**
- * "Pindutin ang naririnig mo" questions: Capi says a word and the child taps its syllables in order.
- * Only single words of two to four syllables are used. The tiles are the word's own syllables plus
- * look-alike syllables from the same lesson (then from any lesson) so there is something to choose.
+ * "Pindutin ang naririnig mo" questions: Capi says a word (or a single sound) and the child taps its syllables in
+ * order. A part of a lesson only holds items with the same number of syllables (see parts.ts), so a question has
+ * exactly as many tiles to place as that part teaches: one tap for a one-syllable part, two for a two-syllable
+ * part, and so on. The tiles are the item's own syllables plus look-alike syllables from the same lesson (then from
+ * any lesson) so there is something to choose.
  */
-export function buildTapQuiz(words: readonly string[], count = 4): TapQuestion[] {
-  const eligible = words.filter((word) => {
-    if (word.includes(" ")) return false;
-    const n = syllabify(word).length;
-    return n >= 2 && n <= 4;
-  });
+export function buildTapQuiz(words: readonly string[], count = QUIZ_QUESTIONS): TapQuestion[] {
+  const eligible = words.filter(quizEligible);
   const lessonSyllables = [...new Set(words.flatMap((word) => syllabify(word)))];
 
   return shuffle(eligible)
@@ -36,7 +48,7 @@ export function buildTapQuiz(words: readonly string[], count = 4): TapQuestion[]
     .map((word) => {
       const syllables = syllabify(word);
       const own = new Set(syllables);
-      const total = Math.max(6, syllables.length + 3);
+      const total = syllables.length === 1 ? 4 : Math.max(6, syllables.length + 3);
       const near = shuffle(lessonSyllables.filter((s) => !own.has(s) && s.length >= 2));
       const far = shuffle(ALL_SYLLABLES.filter((s) => !own.has(s) && !near.includes(s)));
       const extra = [...near, ...far].slice(0, total - syllables.length);

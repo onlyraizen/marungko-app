@@ -60,8 +60,6 @@ export default function HomeScreen() {
   const setActiveChildId = useAppStore((state) => state.setActiveChildId);
   const unlockAll = useAppStore((state) => state.unlockAll);
   const setUnlockAll = useAppStore((state) => state.setUnlockAll);
-  const slowGuide = useAppStore((state) => state.slowGuide);
-  const setSlowGuide = useAppStore((state) => state.setSlowGuide);
   const missedByChild = useAppStore((state) => state.missed);
   const addMissed = useAppStore((state) => state.addMissed);
   const clearMissed = useAppStore((state) => state.clearMissed);
@@ -453,8 +451,6 @@ export default function HomeScreen() {
         <SettingsScreen
           childName={activeChild.display_name}
           email={session.user.email ?? ""}
-          slow={slowGuide}
-          onSlow={setSlowGuide}
           unlockAll={unlockAll}
           onUnlockAll={setUnlockAll}
           check={check}

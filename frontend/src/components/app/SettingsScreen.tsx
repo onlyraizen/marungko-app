@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LANGUAGES } from "../../i18n";
 import { useAppStore } from "../../store/useAppStore";
 import { colors } from "../../theme/colors";
 import { font } from "../../theme/fonts";
@@ -17,8 +18,6 @@ type Route = "root" | "prefs" | "profile" | "notif" | "sound" | "parent" | "priv
 type Props = {
   childName: string;
   email: string;
-  slow: boolean;
-  onSlow: (value: boolean) => void;
   unlockAll: boolean;
   onUnlockAll: (value: boolean) => void;
   check: string | null;
@@ -140,6 +139,34 @@ function ToggleRow({ title, text, value, onChange }: { title: string; text: stri
   );
 }
 
+/** Capi's cheerful lines and the sign-in screens: Filipino or English. The words children read stay Tagalog. */
+function LanguageRow() {
+  const language = useAppStore((state) => state.language);
+  const setLanguage = useAppStore((state) => state.setLanguage);
+  return (
+    <View style={styles.languageBox}>
+      <Text style={styles.toggleTitle}>Language / Wika</Text>
+      <Text style={styles.body}>Capi's praise and the sign-in screens. The words your child reads stay in Tagalog.</Text>
+      <View style={styles.segment}>
+        {LANGUAGES.map((option) => {
+          const on = option.id === language;
+          return (
+            <Pressable
+              key={option.id}
+              onPress={() => setLanguage(option.id)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: on }}
+              style={[styles.segmentItem, on && styles.segmentOn]}
+            >
+              <Text style={[styles.segmentText, on && styles.segmentTextOn]}>{option.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function AnimationsToggle() {
   const animations = useAppStore((state) => state.animations);
   const setAnimations = useAppStore((state) => state.setAnimations);
@@ -159,13 +186,11 @@ function Page({ route, go, onTutorial, ...p }: Props & { route: Route; go: (rout
     case "sound":
       return (
         <>
-          <ToggleRow
-            title="Slow voice"
-            text="Capi talks more slowly so every sound is easy to hear."
-            value={p.slow}
-            onChange={p.onSlow}
-          />
+          <LanguageRow />
           {route === "prefs" ? <AnimationsToggle /> : null}
+          <Text style={styles.body}>
+            Slow voice is now in the lesson: tap the turtle next to the speaker to hear a word again, slowly.
+          </Text>
           {route === "sound" ? (
             <Text style={styles.body}>
               Tap the microphone once. It stops by itself when the child finishes speaking. If it does not work, allow the microphone
@@ -280,6 +305,12 @@ const styles = StyleSheet.create({
   toggle: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16, backgroundColor: colors.white, borderWidth: 2, borderBottomWidth: 5, borderColor: colors.border, borderRadius: 20 },
   toggleText: { flex: 1, gap: 2 },
   toggleTitle: { fontFamily: font.bold, fontSize: 17, color: colors.ink },
+  languageBox: { gap: 4 },
+  segment: { flexDirection: "row", gap: 8, marginTop: 8 },
+  segmentItem: { flex: 1, height: 46, alignItems: "center", justifyContent: "center", borderRadius: 14, borderWidth: 2, borderBottomWidth: 4, borderColor: colors.border, backgroundColor: colors.white },
+  segmentOn: { borderColor: colors.primaryDark, backgroundColor: colors.primary },
+  segmentText: { fontFamily: font.bold, fontSize: 16, color: colors.ink },
+  segmentTextOn: { color: "#1D3B1A" },
   info: { gap: 2 },
   infoValue: { fontFamily: font.display, fontSize: 22, lineHeight: 32, color: colors.ink, includeFontPadding: false },
 });

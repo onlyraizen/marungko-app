@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { TapQuestion } from "../../content/quiz";
 import { MEANINGS } from "../../content/meanings";
 import type { useGuideAudio } from "../../hooks/useGuideAudio";
+import { useLang, useT, type Line } from "../../i18n";
 import { colors } from "../../theme/colors";
 import Bubble from "../ui/Bubble";
 import Button3D from "../ui/Button3D";
@@ -15,15 +16,13 @@ import CapiActor from "./CapiActor";
 import ExerciseFrame from "./ExerciseFrame";
 import ExplainScreen from "./ExplainScreen";
 import FeedbackSheet from "./FeedbackSheet";
-import { PRAISE } from "./lessonText";
+import { praiseAt } from "./lessonText";
 import RoundSpeaker from "./RoundSpeaker";
-import SlowLink from "./SlowLink";
+import SlowSpeaker from "./SlowSpeaker";
 
 type Props = {
   questions: readonly TapQuestion[];
   guide: ReturnType<typeof useGuideAudio>;
-  slow: boolean;
-  onToggleSlow: () => void;
   /** The share of the lesson bar already filled when the quiz starts, and how much the quiz adds. */
   progressFrom: number;
   progressSpan: number;
@@ -39,7 +38,9 @@ type Props = {
 
 /** "Pindutin ang naririnig mo": Capi says a word and the child taps its syllables in order. */
 export default function TapQuiz(props: Props) {
-  const { questions, guide, slow, onToggleSlow, onAnswer, onNote, onFinish, onClose } = props;
+  const { questions, guide, onAnswer, onNote, onFinish, onClose } = props;
+  const t = useT();
+  const lang = useLang();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const [qi, setQi] = useState(0);
@@ -47,6 +48,7 @@ export default function TapQuiz(props: Props) {
   const [checked, setChecked] = useState<{ ok: boolean } | null>(null);
   const [explaining, setExplaining] = useState(false);
   const [flagged, setFlagged] = useState(false);
+  const [praise, setPraise] = useState<Line | null>(null);
   const praiseIndex = useRef(0);
 
   const question = questions[qi];
@@ -69,6 +71,7 @@ export default function TapQuiz(props: Props) {
     setChecked(null);
     setPlaced([]);
     setFlagged(false);
+    setPraise(null);
     if (qi + 1 >= questions.length) onFinish();
     else setQi((current) => current + 1);
   }, [guide, qi, questions.length, onFinish]);
@@ -80,8 +83,10 @@ export default function TapQuiz(props: Props) {
     setChecked({ ok });
     onAnswer(question.word, ok, placedLabels.join("-"), false);
     if (ok) {
-      guide.say(PRAISE[praiseIndex.current % PRAISE.length] ?? "Tama!");
+      const line = praiseAt(praiseIndex.current, guide.has);
       praiseIndex.current += 1;
+      setPraise(line);
+      guide.say(line);
     }
   };
 
@@ -100,18 +105,16 @@ export default function TapQuiz(props: Props) {
   const progress = props.progressFrom + props.progressSpan * ((qi + (checked ? 1 : 0)) / questions.length);
 
   return (
-    <ExerciseFrame title="Pindutin ang naririnig mo" progress={progress} combo={props.combo} yuzu={props.yuzu} onClose={onClose}>
+    <ExerciseFrame title={t("tapQuizTitle")} progress={progress} combo={props.combo} yuzu={props.yuzu} onClose={onClose}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.top}>
           <CapiActor size={capiSize} talking={guide.speaking} listening={false} pose={pose} />
           <View style={styles.right}>
             <Bubble tail="left" tailTop={50} style={styles.bubble}>
               <RoundSpeaker size={46} disabled={guide.speaking} onPress={() => guide.say(question.word)} />
-              <WaveIcon width={Math.max(60, Math.min(96, width - capiSize - 130))} height={40} />
+              <SlowSpeaker size={36} disabled={guide.speaking} onPress={() => guide.say(question.word, { slow: true })} />
+              <WaveIcon width={Math.max(36, Math.min(96, width - capiSize - 184))} height={40} />
             </Bubble>
-            <View style={styles.slow}>
-              <SlowLink on={slow} onPress={onToggleSlow} />
-            </View>
           </View>
         </View>
 
@@ -160,18 +163,18 @@ export default function TapQuiz(props: Props) {
 
       {!checked ? (
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 6 }]}>
-          <TextLink label="DI MAKAPAKINIG NGAYON" onPress={skip} />
-          <Button3D label="Suriin" disabled={placed.length === 0} onPress={check} />
+          <TextLink label={t("cantListen")} onPress={skip} />
+          <Button3D label={t("check")} disabled={placed.length === 0} onPress={check} />
         </View>
       ) : (
         <FeedbackSheet
           good={checked.ok}
-          title={checked.ok ? "Magaling!" : "Hindi pa tama"}
-          kicker={checked.ok ? "Kahulugan:" : "Tamang sagot:"}
+          title={checked.ok ? (praise ? praise[lang] : t("tapRightTitle")) : t("tapWrongTitle")}
+          kicker={checked.ok ? t("tapMeaning") : t("tapAnswer")}
           line={checked.ok ? (meaning ? `${question.word}: ${meaning}` : question.word) : dotted}
-          primaryLabel={qi + 1 >= questions.length ? "Tapusin" : "Susunod"}
+          primaryLabel={qi + 1 >= questions.length ? t("finish") : t("next")}
           onPrimary={next}
-          outlineLabel="Ipaliwanag ang sagot ko"
+          outlineLabel={t("explain")}
           onOutline={() => setExplaining(true)}
           onShare={checked.ok ? () => void Share.share({ message: `Natutunan ko ang salitang "${question.word}" sa Basa-Bata!` }) : undefined}
           onFlag={() => {
@@ -199,7 +202,6 @@ const styles = StyleSheet.create({
   top: { flexDirection: "row", alignItems: "flex-start", marginLeft: -14, marginTop: 4 },
   right: { flex: 1, marginTop: 36, marginLeft: -6 },
   bubble: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 82, paddingHorizontal: 12, paddingVertical: 0 },
-  slow: { alignSelf: "flex-end", marginTop: 6 },
   answer: { height: 148, marginTop: 8 },
   line: { position: "absolute", left: 0, right: 0, top: 72, height: 2, backgroundColor: "#A9CFE0" },
   answerTiles: { position: "absolute", left: 0, right: 0, top: 8, flexDirection: "row", flexWrap: "wrap", columnGap: 10, rowGap: 16 },

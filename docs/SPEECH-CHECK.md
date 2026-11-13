@@ -65,6 +65,13 @@ Simulation (guide voice clips sped up with ffmpeg, 80 words of 2 or more syllabl
 
 Read it with care: this is a clear computer voice sped up, not a rushed person and not a child. Real rushed speech is also clipped differently.
 
+### Too-long sounds ("mooooo")
+The adviser noticed that "mo" was accepted when said as "moooooooooo". Two causes were fixed:
+- **Early accept cut the measurement short.** The app used to stop the microphone 450 ms after the text matched, so a long vowel was never fully measured. Now it waits until the child has been quiet for 250 ms (at most 2.2 s), then judges.
+- **No ceiling for one syllable.** `judgePace` now also returns `drawnOut` when the sound lasts more than `longRatio` times the guide voice's own clip and more than `longMs` (lenient 1100 ms / 3.5x, balanced 800 ms / 2.5x, strict 650 ms / 2.0x). The result is "Almost" with the line "Maikli lang ang tunog." (short sound).
+- The ceiling is only used when there was clear quiet before the speech (lead of at least 60 ms). In a noisy room, or when the start of the sound cannot be told, the text decides (known limit).
+- Simulation (guide clips stretched; `pnpm speech:pace-test`): balanced 0% false rejects at x1 and x0.7, 74% caught at 2.5x longer, 95% at 3x. Thresholds are not calibrated on real children; check with the same 3-adult procedure below.
+
 ### Tradeoff and what to do
 A strict limit blocks gaming but may flag a confident fast speaker. Safe default: **balanced**. If the panel member's speed-ups still pass, move to `strict` after calibrating: have 3 adults say 20 words naturally 5 times; if the lowest natural ratio is 0.8 or more, `strict` is safe. If a child or fast adult is flagged more than 5% of natural attempts, go one step looser. Set it in `frontend/.env` (`EXPO_PUBLIC_PACE_MODE=strict`), then `npx expo start --go -c`.
 

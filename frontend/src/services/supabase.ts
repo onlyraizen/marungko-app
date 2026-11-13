@@ -19,6 +19,9 @@ export const supabase = createClient(url, key, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    // PKCE: if a link-based email or a social sign-in is ever used, the page it opens carries a short-lived one-use
+    // code, never the access token itself. (The sign-up and password-reset emails use a typed code: AuthFlow.tsx.)
+    flowType: "pkce",
   },
 });
 

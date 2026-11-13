@@ -1,0 +1,28 @@
+{
+  "review": "draft",
+  "note": "Capi's lines in English. Generated with: pnpm content:audio -- --english --yes (files are saved as en-<name>.wav). Keep in step with frontend/src/components/lesson/lessonText.ts: pnpm content:phrases-check",
+  "phrases": [
+    "That's right!",
+    "Yay! You got it!",
+    "Great job!",
+    "Wow, you're so good!",
+    "Awesome!",
+    "Perfect!",
+    "You're amazing!",
+    "Hooray! Well done!",
+    "Fantastic!",
+    "Keep going! You're doing great!",
+    "Let's go slowly.",
+    "Let's say it one sound at a time.",
+    "Keep the sound short.",
+    "Almost!",
+    "Try again.",
+    "That's okay! Let's keep going.",
+    "You earned XP!",
+    "Congratulations! Every answer was right!",
+    "Great job! Almost every answer was right!",
+    "Great job! A few were wrong, but that's okay. We learn from mistakes.",
+    "You worked so hard! Let's try again.",
+    "Great job, lesson complete!"
+  ]
+}

@@ -10,10 +10,11 @@ import { PACE_PRESETS, judgePace, type PaceSettings, type PaceVerdict } from "./
  *   3. pace: the word was not squeezed into a blur (measured from the microphone, see pace.ts)
  *
  * Only a text match can pass. Pace and confidence can turn a pass into "almost" (a kind retry), never into a
- * hard fail, and never turn a wrong word into a pass.
+ * hard fail, and never turn a wrong word into a pass. Pace covers both ends: a word squeezed into a blur
+ * ("too-fast"), and a single syllable stretched out ("too-long": "moooo" is not "mo").
  */
 
-export type Reason = "ok" | "too-fast" | "low-confidence" | "near" | "wrong" | "silent";
+export type Reason = "ok" | "too-fast" | "too-long" | "low-confidence" | "near" | "wrong" | "silent";
 
 export type AttemptInput = {
   heard: string;
@@ -24,6 +25,8 @@ export type AttemptInput = {
   spanMs: number | null;
   /** How long the guide voice's clip of this word is, if known. */
   modelMs?: number;
+  /** Quiet before the first sound, in ms (null when unknown). Needed to tell a drawn-out syllable from a noisy room. */
+  leadMs?: number | null;
   /** Mean confidence of the recognised words, 0 to 1, or null. */
   confidence: number | null;
 };
@@ -67,8 +70,9 @@ export function decideAttempt(input: AttemptInput, config: AttemptConfig = DEFAU
   if (matched.kind === "almost") return { result: matched, reason: "near", pace: null, lowConfidence: false };
 
   const lowConfidence = input.confidence !== null && input.confidence < config.confidenceMin(input.syllables);
-  const pace = config.pace !== null && input.spanMs !== null ? judgePace(input.syllables, input.spanMs, config.pace, input.modelMs) : null;
+  const pace = config.pace !== null && input.spanMs !== null ? judgePace(input.syllables, input.spanMs, config.pace, input.modelMs, input.leadMs) : null;
   if (pace?.rushed) return { result: { ...matched, kind: "almost" }, reason: "too-fast", pace, lowConfidence };
+  if (pace?.drawnOut) return { result: { ...matched, kind: "almost" }, reason: "too-long", pace, lowConfidence };
   if (lowConfidence && config.confidenceEnforced) return { result: { ...matched, kind: "almost" }, reason: "low-confidence", pace, lowConfidence };
   return { result: matched, reason: "ok", pace, lowConfidence };
 }

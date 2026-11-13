@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { useT } from "../../i18n";
 import { colors } from "../../theme/colors";
 import { font } from "../../theme/fonts";
 import { syllabify } from "../../content/syllables";
@@ -12,10 +13,11 @@ import ExerciseFrame from "./ExerciseFrame";
 import ListeningPill from "./ListeningPill";
 import PictureCard from "./PictureCard";
 import RoundSpeaker from "./RoundSpeaker";
-import SlowLink from "./SlowLink";
+import SlowSpeaker from "./SlowSpeaker";
 
 /** The compact bubble from the design: a blue speaker button beside the word, the bubble hugging both. */
 const SPEAKER_SIZE = 40;
+const SLOW_SIZE = 34;
 const SPEAKER_GAP = 10;
 const BUBBLE_PADDING = 12;
 const MAX_WORD_SIZE = 40;
@@ -36,10 +38,10 @@ type Props = {
   verdict: "correct" | "almost" | "incorrect" | null;
   micState: MicState;
   micWaiting: boolean;
-  slow: boolean;
   canSpeak: boolean;
-  onToggleSlow: () => void;
   onSpeaker: () => void;
+  /** The turtle: say it again, slowly (once). */
+  onSlowSpeaker: () => void;
   onMic: () => void;
   onSkip: () => void;
   onClose: () => void;
@@ -71,17 +73,18 @@ function DottedWord({ text, color, room }: { text: string; color: string; room: 
 /** "Ulitin pagkatapos ni Capi": Capi says the word, the child says it back. */
 export default function RepeatView(props: Props) {
   const { width } = useWindowDimensions();
+  const t = useT();
   const capiSize = Math.min(230, Math.max(170, width - 168));
   // The bubble hugs its content (speaker + word), centred on the screen, never wider than the screen minus margins.
   const maxBubble = Math.min(320, width - 48);
-  const room = maxBubble - BUBBLE_PADDING * 2 - 4 - SPEAKER_SIZE - SPEAKER_GAP;
+  const room = maxBubble - BUBBLE_PADDING * 2 - 4 - SPEAKER_SIZE - SLOW_SIZE - SPEAKER_GAP * 2;
   const color = props.verdict === "correct" ? colors.primaryInk : props.verdict === "almost" || props.verdict === "incorrect" ? colors.dangerDark : colors.ink;
   const answered = props.verdict !== null;
-  const hint = props.isSyllable ? "Pindutin ang mikropono at sabihin ang pantig" : "Pindutin ang mikropono at sabihin ang salita";
+  const hint = props.isSyllable ? t("micHintSyllable") : t("micHintWord");
 
   return (
     <ExerciseFrame
-      title="Ulitin pagkatapos ni Capi"
+      title={t("repeatTitle")}
       progress={props.progress}
       combo={props.combo}
       yuzu={props.yuzu}
@@ -92,14 +95,14 @@ export default function RepeatView(props: Props) {
           <Bubble tail="bottomLeft" style={styles.bubble}>
             <View style={styles.bubbleInner}>
               {!answered ? (
-                <RoundSpeaker size={SPEAKER_SIZE} disabled={props.listening || !props.canSpeak} onPress={props.onSpeaker} />
+                <>
+                  <RoundSpeaker size={SPEAKER_SIZE} disabled={props.listening || !props.canSpeak} onPress={props.onSpeaker} />
+                  <SlowSpeaker size={SLOW_SIZE} disabled={props.listening || !props.canSpeak} onPress={props.onSlowSpeaker} />
+                </>
               ) : null}
               <DottedWord text={props.item} color={color} room={room} />
             </View>
           </Bubble>
-          <View style={styles.slow}>
-            <SlowLink on={props.slow} onPress={props.onToggleSlow} />
-          </View>
         </View>
       </View>
 
@@ -114,17 +117,17 @@ export default function RepeatView(props: Props) {
 
       {!answered ? (
         <View style={styles.micArea}>
-          {props.listening ? <ListeningPill /> : <Text style={styles.hint}>{props.micState === "blocked" ? "Kailangan ang mikropono para makapagsalita" : hint}</Text>}
+          {props.listening ? <ListeningPill /> : <Text style={styles.hint}>{props.micState === "blocked" ? t("micNeeded") : hint}</Text>}
           <MicButton
             state={props.micState === "blocked" ? "blocked" : props.listening ? "live" : "ready"}
             waiting={props.micWaiting}
             onPress={props.onMic}
-            label={props.listening ? "Itigil ang pagrekord" : "Magsalita"}
+            label={props.listening ? t("micStopLabel") : t("micSpeakLabel")}
           />
           {props.listening ? (
-            <Text style={styles.stop}>PINDUTIN ULIT PARA TUMIGIL</Text>
+            <Text style={styles.stop}>{t("stopRecording")}</Text>
           ) : (
-            <TextLink label="DI MAKAPAGSALITA NGAYON" onPress={props.onSkip} />
+            <TextLink label={t("cantSpeak")} onPress={props.onSkip} />
           )}
         </View>
       ) : (
@@ -139,7 +142,6 @@ const styles = StyleSheet.create({
   bubbleRow: { marginTop: 14, alignItems: "center" },
   bubble: { minWidth: 190, borderRadius: 22, paddingVertical: 6, paddingHorizontal: BUBBLE_PADDING },
   bubbleInner: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPEAKER_GAP },
-  slow: { alignItems: "flex-end", marginTop: 6 },
   wordBox: { alignItems: "center", flexShrink: 1 },
   word: { fontFamily: font.display, letterSpacing: 1, includeFontPadding: false, textAlign: "center" },
   dot: { color: "#3A9ED4" },

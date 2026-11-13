@@ -13,9 +13,9 @@ type AppState = {
   /** The frog (lesson) each child's capybara last stood on, so it can hop forward next time. */
   petUnit: Record<string, string>;
   setPetUnit: (childId: string, unitId: string) => void;
-  /** Slow mode: the guide voice plays slower so a child can hear each sound. */
-  slowGuide: boolean;
-  setSlowGuide: (value: boolean) => void;
+  /** The language of Capi's cheerful lines, the praise and the sign-in screens. The words children read stay Tagalog. */
+  language: "fil" | "en";
+  setLanguage: (value: "fil" | "en") => void;
   /** Words each child missed, for "Balik-aral" (review). Cleared word by word as they get them right. */
   missed: Record<string, string[]>;
   addMissed: (childId: string, word: string) => void;
@@ -48,8 +48,8 @@ export const useAppStore = create<AppState>()(
       setActiveChildId: (id) => set({ activeChildId: id }),
       unlockAll: false,
       setUnlockAll: (value) => set({ unlockAll: value }),
-      slowGuide: false,
-      setSlowGuide: (value) => set({ slowGuide: value }),
+      language: "fil",
+      setLanguage: (value) => set({ language: value }),
       missed: {},
       addMissed: (childId, word) =>
         set((state) => {

@@ -31,24 +31,47 @@ const words = new Set<string>();
 for (const file of readdirSync(join(root, "content", "units")).filter((name) => name.endsWith(".json"))) {
   const unit = UnitSchema.parse(JSON.parse(readFileSync(join(root, "content", "units", file), "utf8")));
   for (const word of unit.words) if (!word.includes(" ")) words.add(word);
+  for (const syllable of unit.syllables) words.add(syllable); // one-syllable items: the app compares "mo" with the guide's own "mo"
 }
 const clips = [...words].filter((word) => existsSync(join(dir, `${audioKey(word)}.wav`)));
 if (spawnSync("ffmpeg", ["-version"]).status !== 0) throw new Error("ffmpeg not found");
 
 const scratch = mkdtempSync(join(tmpdir(), "pace-"));
+function tempoStages(speed: number): string[] {
+  // atempo takes 0.5 to 2 per stage; chain stages for more.
+  const stages: string[] = [];
+  let left = speed;
+  while (left > 2) {
+    stages.push("atempo=2");
+    left /= 2;
+  }
+  while (left < 0.5) {
+    stages.push("atempo=0.5");
+    left /= 0.5;
+  }
+  stages.push(`atempo=${left}`);
+  return stages;
+}
+
+/** Like a real attempt: 400 ms of quiet before and after the clip. Returns the measured span and the quiet lead. */
+function measurePadded(word: string, speed: number): { spanMs: number; leadMs: number } | null {
+  const source = join(dir, `${audioKey(word)}.wav`);
+  const path = join(scratch, `${audioKey(word)}.${speed}.padded.wav`);
+  const filters = [...tempoStages(speed), "adelay=400:all=1", "apad=pad_dur=0.4"].join(",");
+  const run = spawnSync("ffmpeg", ["-y", "-loglevel", "error", "-i", source, "-af", filters, "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", path]);
+  if (run.status !== 0) throw new Error(`ffmpeg failed for ${word}`);
+  const wav = readWav(path);
+  if (wav === null) return null;
+  const span = findSpan(envelope(wav.samples, wav.rate));
+  return span === null ? null : { spanMs: span.spanMs, leadMs: span.startMs };
+}
+
 function spanAt(word: string, speed: number): number | null {
   const source = join(dir, `${audioKey(word)}.wav`);
   let path = source;
   if (speed !== 1) {
     path = join(scratch, `${audioKey(word)}.${speed}.wav`);
-    // atempo takes 0.5 to 2 per stage; chain stages for more.
-    const stages: string[] = [];
-    let left = speed;
-    while (left > 2) {
-      stages.push("atempo=2");
-      left /= 2;
-    }
-    stages.push(`atempo=${left}`);
+    const stages = tempoStages(speed);
     const run = spawnSync("ffmpeg", ["-y", "-loglevel", "error", "-i", source, "-af", stages.join(","), "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", path]);
     if (run.status !== 0) throw new Error(`ffmpeg failed for ${word}`);
   } else {
@@ -120,5 +143,27 @@ for (const speed of speeds) {
   const show = (count: number): string => `${Math.round((100 * count) / total)}%`.padStart(6);
   console.log(`x${String(speed).padEnd(5)} ${show(counts.lenient)}   ${show(counts.balanced)}   ${show(counts.strict)}     (${total} words of 2+ syllables)`);
   detail[`x${speed}`] = Math.round((100 * counts.balanced) / total);
+}
+
+// One-syllable items stretched out ("mo" said "moooo"). A slowed copy of the guide's clip is only a stand-in for a
+// child holding the vowel, so this shows how the numbers behave, not how children sound.
+const oneSyllable = clips.filter((word) => syllabify(word).length === 1);
+if (oneSyllable.length > 0) {
+  console.log(`\nShare of the ${oneSyllable.length} one-syllable clips called "too long" when played slower (a stand-in for "moooo")`);
+  console.log("speed   lenient  balanced  strict    (x1 and x0.7 should be 0%: those would be false rejects)");
+  for (const speed of [1, 0.7, 0.5, 0.4, 0.33, 0.25]) {
+    const counts = { lenient: 0, balanced: 0, strict: 0 };
+    const spans: number[] = [];
+    let total = 0;
+    for (const word of oneSyllable) {
+      const measured = measurePadded(word, speed);
+      if (measured === null) continue;
+      total += 1;
+      spans.push(measured.spanMs);
+      for (const name of ["lenient", "balanced", "strict"] as const) if (judgePace(1, measured.spanMs, PACE_PRESETS[name], model.get(audioKey(word)), measured.leadMs).drawnOut) counts[name] += 1;
+    }
+    const show = (count: number): string => `${Math.round((100 * count) / total)}%`.padStart(6);
+    console.log(`x${String(speed).padEnd(5)} ${show(counts.lenient)}   ${show(counts.balanced)}   ${show(counts.strict)}     median ${median(spans)} ms, longest ${Math.max(...spans)} ms`);
+  }
 }
 rmSync(scratch, { recursive: true, force: true });

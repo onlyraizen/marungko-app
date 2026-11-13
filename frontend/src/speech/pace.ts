@@ -27,11 +27,13 @@ export class PaceMeter {
   readonly frames: number[] = [];
   private sum = 0;
   private count = 0;
+  private peak = -120;
 
   reset(): void {
     this.frames.length = 0;
     this.sum = 0;
     this.count = 0;
+    this.peak = -120;
   }
 
   /** Feed one chunk of 16-bit samples exactly as the microphone delivers it. */
@@ -42,11 +44,28 @@ export class PaceMeter {
       this.count += 1;
       if (this.count === FRAME_SAMPLES) {
         const rms = Math.sqrt(this.sum / FRAME_SAMPLES) / 32768;
-        if (this.frames.length < MAX_FRAMES) this.frames.push(20 * Math.log10(rms + 1e-9));
+        const db = 20 * Math.log10(rms + 1e-9);
+        if (this.frames.length < MAX_FRAMES) {
+          this.frames.push(db);
+          if (db > this.peak) this.peak = db;
+        }
         this.sum = 0;
         this.count = 0;
       }
     }
+  }
+
+  /**
+   * How long it has been quiet at the end of what was heard so far, in ms; null while nothing that sounds like
+   * speech has been heard. The lesson waits for this before accepting a matching word, so a sound that is still
+   * going ("moooo") is measured to its end instead of being cut off the moment the words match.
+   */
+  quietForMs(): number | null {
+    if (this.peak < MIN_PEAK_DB) return null;
+    const gate = Math.max(this.peak - GATE_BELOW_PEAK_DB, ABSOLUTE_FLOOR_DB);
+    let quiet = 0;
+    for (let f = this.frames.length - 1; f >= 0 && (this.frames[f] ?? -120) <= gate; f -= 1) quiet += 1;
+    return quiet * FRAME_MS;
   }
 }
 
@@ -119,22 +138,38 @@ export type PaceSettings = {
   maxSyllablesPerSecond: number;
   /** Shortest possible time per syllable, any word. Under this it is a click or a blur, not a syllable. */
   floorMsPerSyllable: number;
+  /**
+   * One-syllable items only ("mo" must be "moh", not "moooooo"): longer than BOTH this many ms and this many times
+   * the guide's own clip counts as drawn out. Words are never judged for being too slow: a child sounding a word
+   * out slowly, with pauses, is what the lesson asks for.
+   */
+  longMs: number;
+  longRatio: number;
 };
 
 export const PACE_PRESETS = {
-  lenient: { minRatio: 0.5, maxSyllablesPerSecond: 8, floorMsPerSyllable: 90 },
-  balanced: { minRatio: 0.6, maxSyllablesPerSecond: 7.5, floorMsPerSyllable: 100 },
-  strict: { minRatio: 0.7, maxSyllablesPerSecond: 6.5, floorMsPerSyllable: 110 },
+  lenient: { minRatio: 0.5, maxSyllablesPerSecond: 8, floorMsPerSyllable: 90, longMs: 1100, longRatio: 3.5 },
+  balanced: { minRatio: 0.6, maxSyllablesPerSecond: 7.5, floorMsPerSyllable: 100, longMs: 800, longRatio: 2.5 },
+  strict: { minRatio: 0.7, maxSyllablesPerSecond: 6.5, floorMsPerSyllable: 110, longMs: 650, longRatio: 2.0 },
 } as const satisfies Record<string, PaceSettings>;
 
+/**
+ * The drawn-out check needs a quiet start to be sure the long sound is the child and not a noisy room (noise above the
+ * gate from the very first moment would look like one endless sound). Without it the text decides.
+ */
+export const MIN_LEAD_MS_FOR_LONG = 60;
+
 export type PaceVerdict = {
+  /** Too short or too fast: squeezed into a blur. */
   rushed: boolean;
+  /** One syllable held far longer than it takes to say ("moooo"). */
+  drawnOut: boolean;
   syllables: number;
   spanMs: number;
   expectedMs: number;
   ratio: number;
   syllablesPerSecond: number;
-  why: "ok" | "too-short" | "too-fast";
+  why: "ok" | "too-short" | "too-fast" | "too-long";
 };
 
 /**
@@ -142,7 +177,14 @@ export type PaceVerdict = {
  * (a word with "ng" or two vowels together is not the same length as "pato"), so the word's own clip is the best
  * yardstick. Without it the table by syllable count is used.
  */
-export function judgePace(syllables: number, spanMs: number, settings: PaceSettings = PACE_PRESETS.balanced, modelMs?: number): PaceVerdict {
+export function judgePace(
+  syllables: number,
+  spanMs: number,
+  settings: PaceSettings = PACE_PRESETS.balanced,
+  modelMs?: number,
+  /** Quiet before the first sound, in ms. Leave out (or null) and a one-syllable item is never called too long. */
+  leadMs?: number | null,
+): PaceVerdict {
   const count = Math.max(1, syllables);
   const expected = modelMs !== undefined && modelMs > 0 ? modelMs : expectedMs(count);
   const ratio = spanMs / expected;
@@ -150,5 +192,6 @@ export function judgePace(syllables: number, spanMs: number, settings: PaceSetti
   let why: PaceVerdict["why"] = "ok";
   if (spanMs < settings.floorMsPerSyllable * count) why = "too-short";
   else if (count >= 2 && (ratio < settings.minRatio || sps > settings.maxSyllablesPerSecond)) why = "too-fast";
-  return { rushed: why !== "ok", syllables: count, spanMs, expectedMs: expected, ratio, syllablesPerSecond: sps, why };
+  else if (count === 1 && typeof leadMs === "number" && leadMs >= MIN_LEAD_MS_FOR_LONG && spanMs > Math.max(settings.longMs, settings.longRatio * expected)) why = "too-long";
+  return { rushed: why === "too-short" || why === "too-fast", drawnOut: why === "too-long", syllables: count, spanMs, expectedMs: expected, ratio, syllablesPerSecond: sps, why };
 }

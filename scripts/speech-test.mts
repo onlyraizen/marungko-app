@@ -32,6 +32,10 @@ function samplesAt(word: string, speed: number): Int16Array {
     stages.push("atempo=2");
     left /= 2;
   }
+  while (left < 0.5) {
+    stages.push("atempo=0.5");
+    left /= 0.5;
+  }
   stages.push(`atempo=${left}`);
   const run = spawnSync("ffmpeg", ["-y", "-loglevel", "error", "-i", join(dir, `${word}.wav`), "-af", stages.join(","), "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", out]);
   if (run.status !== 0) throw new Error("ffmpeg failed");
@@ -61,8 +65,9 @@ function listen(speech: Int16Array, noiseDb: number | null): PaceMeter {
 }
 
 function check(label: string, heard: string, target: string, expected: "correct" | "almost" | "incorrect", speech: Int16Array | null, noiseDb: number | null = null, confidence: number | null = 0.9): void {
-  const span = speech === null ? null : findSpan(listen(speech, noiseDb).frames)?.spanMs ?? null;
-  const decision = decideAttempt({ heard, target, accepted: acceptedFor(target), syllables: syllabify(target).length, spanMs: span, modelMs: WORD_MS[target], confidence });
+  const measured = speech === null ? null : findSpan(listen(speech, noiseDb).frames);
+  const span = measured?.spanMs ?? null;
+  const decision = decideAttempt({ heard, target, accepted: acceptedFor(target), syllables: syllabify(target).length, spanMs: span, modelMs: WORD_MS[target], leadMs: measured?.startMs ?? null, confidence });
   const ok = decision.result.kind === expected;
   if (!ok) failures += 1;
   rows.push([label, expected, decision.result.kind + (ok ? "" : "  <-- FAIL"), decision.reason, String(span ?? "-"), decision.pace ? decision.pace.ratio.toFixed(2) : "-"]);
@@ -89,6 +94,22 @@ check("pato, speech not measurable", "pato", "pato", "correct", null);
 check("ye heard as yeah, clear", "yeah", "ye", "correct", samplesAt("yelo", 1).subarray(0, 4800), null);
 check("ye, a 60 ms burst only (a blur)", "yeah", "ye", "almost", Int16Array.from({ length: 960 }, (_, i) => Math.round(8000 * Math.sin(i * 0.3))));
 check("ye, one click (nothing to measure)", "yeah", "ye", "correct", new Int16Array(160).fill(12000)); // not measurable: the text decides
+
+// One syllable must be "moh", not "moooo". The guide's clip slowed down stands in for a held vowel.
+for (const syllable of ["mo", "ma", "se", "ku"]) {
+  if (!existsSync(join(dir, `${syllable}.wav`))) continue;
+  const accepted = acceptedFor(syllable)[0] ?? syllable;
+  check(`${syllable} normal (x1)`, syllable, syllable, "correct", samplesAt(syllable, 1));
+  check(`${syllable} said as "${accepted}", normal`, accepted, syllable, "correct", samplesAt(syllable, 1));
+  check(`${syllable} a little slow (x0.7)`, syllable, syllable, "correct", samplesAt(syllable, 0.7));
+  check(`${syllable} held, about 3x (x0.33)`, syllable, syllable, "almost", samplesAt(syllable, 0.33));
+  check(`${syllable} held very long (x0.2)`, syllable, syllable, "almost", samplesAt(syllable, 0.2));
+  check(`${syllable} held, but the wrong sound`, "na", syllable, "incorrect", samplesAt(syllable, 0.33)); // text still decides: never a pass
+}
+if (existsSync(join(dir, "mo.wav"))) {
+  check("mo held, quiet room noise -50 dB", "mo", "mo", "almost", samplesAt("mo", 0.33), -50);
+  check("mo held, loud room -30 dB", "mo", "mo", "correct", samplesAt("mo", 0.33), -30); // known limit: noise from the first moment, nothing to measure against
+}
 
 console.log(rows.map((row) => row.map((cell, i) => cell.padEnd([40, 9, 20, 10, 8, 6][i] ?? 8)).join(" ")).join("\n"));
 console.log(failures === 0 ? "\nAll cases behave as designed." : `\n${failures} case(s) differ from the design.`);

@@ -5,13 +5,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { medalLabel } from "../../content/awards";
 import type { useGuideAudio } from "../../hooks/useGuideAudio";
 import { playSfx } from "../../hooks/useSfx";
+import { useLang, useT } from "../../i18n";
 import { colors } from "../../theme/colors";
 import { font } from "../../theme/fonts";
 import { FLAME, ICONS, LOOPS, MEDAL_ART, POSES, type MedalId } from "../art/assets";
 import Button3D from "../ui/Button3D";
 import { YuzuIcon } from "../ui/Icons";
 import type { LessonSummary } from "./LessonScreen";
-import { lessonMessage } from "./lessonText";
+import { FEEDBACK, lessonLine } from "./lessonText";
 
 type Props = {
   title: string;
@@ -33,7 +34,10 @@ export default function LessonResult({ title, practice, quiz, yuzu, review, summ
   const correct = practice.correct + (quiz?.correct ?? 0);
   const total = practice.total + (quiz?.total ?? 0);
   const insets = useSafeAreaInsets();
-  const message = lessonMessage(correct, total);
+  const t = useT();
+  const lang = useLang();
+  const line = lessonLine(correct, total);
+  const message = line[lang];
   const spoken = useRef(false);
   const medalHeard = useRef(false);
   const medals = summary?.medals ?? [];
@@ -44,7 +48,7 @@ export default function LessonResult({ title, practice, quiz, yuzu, review, summ
     if (spoken.current) return;
     spoken.current = true;
     void playSfx("finished");
-    const timer = setTimeout(() => guide.sayAll(saveError || review ? [message] : [message, "Nakakuha ka ng XP!"]), 900);
+    const timer = setTimeout(() => guide.sayAll(saveError || review ? [line] : [line, FEEDBACK.xp]), 900);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -72,7 +76,7 @@ export default function LessonResult({ title, practice, quiz, yuzu, review, summ
       <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 12 }]} showsVerticalScrollIndicator={false}>
         <Image source={LOOPS.celebrate} placeholder={POSES.celebrate} autoplay contentFit="contain" style={styles.capi} accessibilityLabel="Nagdiriwang si Capi" />
         <Text style={styles.kicker}>{title}</Text>
-        <Text style={styles.heading}>{review ? "Tapos na ang balik-aral!" : "Natapos mo ang aralin!"}</Text>
+        <Text style={styles.heading}>{review ? t("reviewDone") : t("resultDone")}</Text>
         <Text style={styles.message}>{message}</Text>
 
         <View style={styles.tiles}>
@@ -86,7 +90,7 @@ export default function LessonResult({ title, practice, quiz, yuzu, review, summ
             </View>
           ) : (
             <View style={[styles.tile, { borderColor: colors.accent }]}>
-              <Text style={[styles.tileLabel, { color: "#8A6100" }]}>KUHANG XP</Text>
+              <Text style={[styles.tileLabel, { color: "#8A6100" }]}>{t("xpEarned")}</Text>
               <View style={styles.tileRow}>
                 <Image source={ICONS.star} contentFit="contain" style={styles.tileIcon} />
                 <Text style={styles.tileValue}>{summary ? `+${summary.gained}` : saving ? "..." : "-"}</Text>
@@ -94,7 +98,7 @@ export default function LessonResult({ title, practice, quiz, yuzu, review, summ
             </View>
           )}
           <View style={[styles.tile, { borderColor: colors.primary }]}>
-            <Text style={[styles.tileLabel, { color: colors.primaryInk }]}>TAMA</Text>
+            <Text style={[styles.tileLabel, { color: colors.primaryInk }]}>{t("correctLabel")}</Text>
             <Text style={styles.tileValue}>
               {correct} / {total}
             </Text>
@@ -105,8 +109,8 @@ export default function LessonResult({ title, practice, quiz, yuzu, review, summ
           <View style={styles.medalCard}>
             <Image source={FLAME.extend} autoplay contentFit="contain" style={styles.flame} />
             <View style={styles.medalText}>
-              <Text style={styles.medalKicker}>APOY NG PAG-AARAL</Text>
-              <Text style={styles.medalName}>{summary.streak} araw na magkakasunod!</Text>
+              <Text style={styles.medalKicker}>{t("streakKicker")}</Text>
+              <Text style={styles.medalName}>{t("streakDays", { n: summary.streak })}</Text>
             </View>
           </View>
         ) : null}
@@ -115,7 +119,7 @@ export default function LessonResult({ title, practice, quiz, yuzu, review, summ
           <View style={styles.medalCard}>
             <Image source={MEDAL_ART[firstMedal as MedalId].on} contentFit="contain" style={styles.medal} />
             <View style={styles.medalText}>
-              <Text style={styles.medalKicker}>BAGONG MEDALYA</Text>
+              <Text style={styles.medalKicker}>{t("medalKicker")}</Text>
               <Text style={styles.medalName}>
                 {medalLabel(firstMedal)}
                 {medals.length > 1 ? ` +${medals.length - 1} pa` : ""}

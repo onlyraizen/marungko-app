@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LANGUAGES, useT, type Translate } from "../../i18n";
 import { supabase } from "../../services/supabase";
 import { useAppStore } from "../../store/useAppStore";
 import { font } from "../../theme/fonts";
@@ -22,18 +23,29 @@ import { BackIcon, EyeIcon } from "../ui/Icons";
 import TextLink from "../ui/TextLink";
 import { dark, darkStyles, DarkPage, HelloCapi } from "./dark";
 
-type Step = "welcome" | "meet" | "saved" | "form";
+type Step = "welcome" | "meet" | "saved" | "form" | "code";
 type Mode = "signIn" | "signUp";
+/** What the emailed code is for: confirming a new account, or setting a new password. */
+type CodeFor = "signup" | "recovery";
+
+/** Seconds before another code may be asked for. Supabase allows one per 60 s per person, so ask no sooner. */
+const RESEND_SECONDS = 60;
 
 /**
- * Everything before the app: welcome, meeting Capi, saved accounts, and the email + password form.
+ * Everything before the app: welcome, meeting Capi, saved accounts, the email + password form, and the 6-digit code.
  * The home screen reacts to the new session, so nothing here has to navigate when sign-in works.
+ *
+ * Why a code and not a link: the confirmation link of a hosted Supabase project opens a web page whose address carries
+ * the sign-in token, and the default page it opens is "localhost", which is a security finding and a dead end for a
+ * parent. A code typed into the app never puts a token in a web address. (The email template must show the code:
+ * docs/AUTH-SETUP.md, step 1.)
  */
 export default function AuthFlow() {
   const saved = useAppStore((state) => state.savedAccounts);
   const [step, setStep] = useState<Step>(saved.length > 0 ? "saved" : "welcome");
   const [mode, setMode] = useState<Mode>("signIn");
   const [email, setEmail] = useState("");
+  const [codeFor, setCodeFor] = useState<CodeFor>("signup");
 
   const toForm = (nextMode: Mode, address = "") => {
     setMode(nextMode);
@@ -47,6 +59,9 @@ export default function AuthFlow() {
   if (step === "meet") {
     return <Meet onNext={() => toForm("signUp")} onBack={() => setStep("welcome")} />;
   }
+  if (step === "code") {
+    return <CodeStep email={email} purpose={codeFor} onBack={() => setStep("form")} />;
+  }
   if (step === "form") {
     return (
       <Form
@@ -55,53 +70,96 @@ export default function AuthFlow() {
         onEmail={setEmail}
         onBack={() => setStep(saved.length > 0 ? "saved" : "welcome")}
         onSwitchMode={() => setMode(mode === "signIn" ? "signUp" : "signIn")}
+        onNeedCode={(purpose) => {
+          setCodeFor(purpose);
+          setStep("code");
+        }}
       />
     );
   }
   return <Welcome onSignIn={() => toForm("signIn")} onNew={() => setStep("meet")} />;
 }
 
+/** "FIL | EN": the sign-in screens in Filipino or English. */
+export function LanguageSwitch() {
+  const language = useAppStore((state) => state.language);
+  const setLanguage = useAppStore((state) => state.setLanguage);
+  const t = useT();
+  return (
+    <View style={styles.switch} accessibilityRole="radiogroup" accessibilityLabel={t("languageLabel")}>
+      {LANGUAGES.map((option) => {
+        const on = option.id === language;
+        return (
+          <Pressable
+            key={option.id}
+            onPress={() => setLanguage(option.id)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: on }}
+            accessibilityLabel={option.label}
+            hitSlop={6}
+            style={[styles.switchItem, on && styles.switchOn]}
+          >
+            <Text style={[styles.switchText, on && styles.switchTextOn]}>{option.id === "fil" ? "FIL" : "EN"}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export function Welcome({ onSignIn, onNew }: { onSignIn: () => void; onNew: () => void }) {
+  const t = useT();
   return (
     <DarkPage>
+      <View style={styles.topRight}>
+        <LanguageSwitch />
+      </View>
       <View style={styles.hero}>
         <HelloCapi size={250} />
         <Text style={styles.brand}>Basa-Bata</Text>
       </View>
       <View style={styles.actions}>
-        <Text style={styles.ask}>May account ka na ba?</Text>
-        <Button3D label="Mag-sign in" onPress={onSignIn} />
-        <Text style={styles.ask}>Bago ka sa Basa-Bata?</Text>
-        <Button3D label="Simulan na" tone="outlineLight" labelColor={dark.green} onPress={onNew} />
+        <Text style={styles.ask}>{t("welcomeAsk")}</Text>
+        <Button3D label={t("signInButton")} onPress={onSignIn} />
+        <Text style={styles.ask}>{t("newAsk")}</Text>
+        <Button3D label={t("startButton")} tone="outlineLight" labelColor={dark.green} onPress={onNew} />
       </View>
     </DarkPage>
   );
 }
 
 export function Meet({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
+  const t = useT();
   return (
     <DarkPage>
-      <BackButton onPress={onBack} />
+      <View style={styles.headerRow}>
+        <BackButton onPress={onBack} />
+        <LanguageSwitch />
+      </View>
       <View style={styles.hero}>
         <Capi pose="palms" size={250} />
-        <Text style={darkStyles.title}>Kumusta! Ako si Capi!</Text>
-        <Text style={darkStyles.body}>Tutulungan kitang magbasa, isang tunog sa bawat pagkakataon.</Text>
+        <Text style={darkStyles.title}>{t("meetTitle")}</Text>
+        <Text style={darkStyles.body}>{t("meetBody")}</Text>
       </View>
-      <Button3D label="Ituloy" onPress={onNext} />
+      <Button3D label={t("continueButton")} onPress={onNext} />
     </DarkPage>
   );
 }
 
 export function SavedAccounts({ onPick, onOther }: { onPick: (email: string) => void; onOther: () => void }) {
+  const t = useT();
   const saved = useAppStore((state) => state.savedAccounts);
   const forget = useAppStore((state) => state.forgetAccount);
   const [managing, setManaging] = useState(false);
   return (
     <DarkPage>
       <ScrollView contentContainerStyle={styles.savedScroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.topRight}>
+          <LanguageSwitch />
+        </View>
         <View style={styles.hero}>
           <HelloCapi size={190} />
-          <Text style={darkStyles.title}>Maligayang pagbabalik!</Text>
+          <Text style={darkStyles.title}>{t("welcomeBack")}</Text>
         </View>
         {saved.map((address) => (
           <Pressable
@@ -117,15 +175,15 @@ export function SavedAccounts({ onPick, onOther }: { onPick: (email: string) => 
               {address}
             </Text>
             {managing ? (
-              <Pressable onPress={() => forget(address)} accessibilityLabel={`Alisin ang ${address}`} hitSlop={10}>
-                <Text style={styles.remove}>ALISIN</Text>
+              <Pressable onPress={() => forget(address)} accessibilityLabel={t("removeAccountLabel", { email: address })} hitSlop={10}>
+                <Text style={styles.remove}>{t("removeAccount")}</Text>
               </Pressable>
             ) : null}
           </Pressable>
         ))}
-        <Button3D label="Magdagdag ng ibang account" tone="outlineLight" onPress={onOther} />
+        <Button3D label={t("addAccount")} tone="outlineLight" onPress={onOther} />
         <TextLink
-          label={managing ? "Tapos na" : "Pamahalaan ang mga account"}
+          label={managing ? t("doneManaging") : t("manageAccounts")}
           color={dark.blue}
           onPress={() => setManaging(!managing)}
         />
@@ -134,19 +192,30 @@ export function SavedAccounts({ onPick, onOther }: { onPick: (email: string) => 
   );
 }
 
+/** A message for the person, from a Supabase error: our own words for the common ones, never a token or a raw code. */
+function friendly(error: { message: string; status?: number; code?: string }, t: Translate): string {
+  if (error.status === 429 || error.code === "over_email_send_rate_limit" || error.code === "over_request_rate_limit") return t("tooManyTries");
+  if (error.code === "invalid_credentials") return t("badLogin");
+  if (error.code === "otp_expired" || error.code === "invalid_otp") return t("codeWrong");
+  return error.message;
+}
+
 export function Form({
   mode,
   email,
   onEmail,
   onBack,
   onSwitchMode,
+  onNeedCode,
 }: {
   mode: Mode;
   email: string;
   onEmail: (value: string) => void;
   onBack: () => void;
   onSwitchMode: () => void;
+  onNeedCode: (purpose: CodeFor) => void;
 }) {
+  const t = useT();
   const insets = useSafeAreaInsets();
   const remember = useAppStore((state) => state.rememberAccount);
   const [password, setPassword] = useState("");
@@ -159,27 +228,37 @@ export function Form({
   const submit = async () => {
     const address = email.trim().toLowerCase();
     if (!address.includes("@")) {
-      setMessage("Maglagay ng tamang email address.");
+      setMessage(t("badEmail"));
       return;
     }
     if (password.length < 8) {
-      setMessage("Gumamit ng hindi bababa sa 8 titik para sa password.");
+      setMessage(t("shortPassword"));
       return;
     }
     setBusy(true);
     setMessage(null);
     if (isSignIn) {
       const { error } = await supabase.auth.signInWithPassword({ email: address, password });
-      if (error) setMessage(error.message);
+      if (error?.code === "email_not_confirmed") {
+        // The account exists but was never confirmed: send a fresh code and go to the code screen.
+        const sent = await supabase.auth.resend({ type: "signup", email: address });
+        if (sent.error) setMessage(friendly(sent.error, t));
+        else {
+          onEmail(address);
+          setMessage(null);
+          Alert.alert("", t("notConfirmedSent"));
+          onNeedCode("signup");
+        }
+      } else if (error) setMessage(friendly(error, t));
       else remember(address);
     } else {
       const { data, error } = await supabase.auth.signUp({ email: address, password });
       if (error) {
-        setMessage(error.message);
+        setMessage(friendly(error, t));
       } else if (!data.session) {
-        // Happens while email confirmation is on: the account exists but is unconfirmed.
-        setMessage("Nagawa ang account. Kailangan itong ma-confirm bago ka makapag-sign in.");
-        remember(address);
+        // Email confirmation is on: the account exists but is unconfirmed until the code from the email is entered.
+        onEmail(address);
+        onNeedCode("signup");
       } else {
         remember(address);
       }
@@ -190,28 +269,38 @@ export function Form({
   const forgot = async () => {
     const address = email.trim().toLowerCase();
     if (!address.includes("@")) {
-      setMessage("Ilagay muna ang iyong email address.");
+      setMessage(t("needEmailFirst"));
       return;
     }
+    setBusy(true);
     const { error } = await supabase.auth.resetPasswordForEmail(address);
-    setMessage(error ? error.message : "Nagpadala kami ng link para palitan ang password. Tingnan ang iyong email.");
+    setBusy(false);
+    if (error) {
+      setMessage(friendly(error, t));
+      return;
+    }
+    onEmail(address);
+    onNeedCode("recovery");
   };
 
-  const soon = () => Alert.alert("Malapit na", "Hindi pa magagamit ang pag-sign in gamit ang ibang app. Gumamit muna ng email.");
+  const soon = () => Alert.alert(t("soonTitle"), t("soonBody"));
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <DarkPage style={{ paddingTop: insets.top + 16 }}>
         <ScrollView contentContainerStyle={styles.formScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <BackButton onPress={onBack} />
+          <View style={styles.headerRow}>
+            <BackButton onPress={onBack} />
+            <LanguageSwitch />
+          </View>
           <View style={styles.peekWrap}>
             <CapiPeek peek="thinking" width={150} />
           </View>
-          <Text style={darkStyles.title}>Ilagay ang iyong detalye</Text>
+          <Text style={darkStyles.title}>{t("formTitle")}</Text>
 
           <TextInput
             style={styles.field}
-            placeholder="Email address"
+            placeholder={t("emailPlaceholder")}
             placeholderTextColor={dark.muted}
             autoCapitalize="none"
             autoCorrect={false}
@@ -222,7 +311,7 @@ export function Form({
           <View style={styles.passRow}>
             <TextInput
               style={[styles.field, styles.passField]}
-              placeholder="Password (8+ titik)"
+              placeholder={t("passwordPlaceholder")}
               placeholderTextColor={dark.muted}
               autoCapitalize="none"
               autoCorrect={false}
@@ -230,7 +319,7 @@ export function Form({
               value={password}
               onChangeText={setPassword}
             />
-            <Pressable onPress={() => setShow(!show)} style={styles.eye} accessibilityRole="button" accessibilityLabel={show ? "Itago ang password" : "Ipakita ang password"}>
+            <Pressable onPress={() => setShow(!show)} style={styles.eye} accessibilityRole="button" accessibilityLabel={show ? t("hidePassword") : t("showPassword")}>
               <EyeIcon off={!show} />
             </Pressable>
           </View>
@@ -240,28 +329,150 @@ export function Form({
           {busy ? (
             <ActivityIndicator color={dark.green} style={styles.spinner} />
           ) : (
-            <Button3D label={isSignIn ? "Mag-sign in" : "Gumawa ng account"} disabled={!filled} onPress={submit} />
+            <Button3D label={isSignIn ? t("signInButton") : t("createButton")} disabled={!filled} onPress={submit} />
           )}
-          {isSignIn ? <TextLink label="Nalimutan ang password" color={dark.blue} onPress={forgot} /> : null}
-          <TextLink
-            label={isSignIn ? "Bago ka ba? Gumawa ng account" : "May account na? Mag-sign in"}
-            color={dark.blue}
-            onPress={onSwitchMode}
-          />
+          {isSignIn ? <TextLink label={t("forgotLink")} color={dark.blue} onPress={forgot} /> : null}
+          <TextLink label={isSignIn ? t("switchToSignUp") : t("switchToSignIn")} color={dark.blue} onPress={onSwitchMode} />
 
           <View style={styles.divider}>
             <View style={styles.rule} />
-            <Text style={darkStyles.label}>O</Text>
+            <Text style={darkStyles.label}>{t("or")}</Text>
             <View style={styles.rule} />
           </View>
           {["Google", "Facebook", "Apple"].map((name) => (
             <Pressable key={name} onPress={soon} accessibilityRole="button" style={styles.social}>
-              <Text style={styles.socialText}>MAG-SIGN IN GAMIT ANG {name.toUpperCase()}</Text>
+              <Text style={styles.socialText}>{t("socialButton", { name: name.toUpperCase() })}</Text>
             </Pressable>
           ))}
-          <Text style={styles.terms}>
-            Sa pag-sign in, sumasang-ayon ka sa aming Mga Tuntunin at Patakaran sa Privacy.
-          </Text>
+          <Text style={styles.terms}>{t("terms")}</Text>
+        </ScrollView>
+      </DarkPage>
+    </KeyboardAvoidingView>
+  );
+}
+
+/**
+ * "Tingnan ang iyong email": the 6-digit code from the email. For a new account it confirms the email; for a forgotten
+ * password it also takes the new password, so the person is signed in with it straight away.
+ */
+export function CodeStep({ email, purpose, onBack }: { email: string; purpose: CodeFor; onBack: () => void }) {
+  const t = useT();
+  const insets = useSafeAreaInsets();
+  const remember = useAppStore((state) => state.rememberAccount);
+  const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [wait, setWait] = useState(RESEND_SECONDS);
+  const recovery = purpose === "recovery";
+
+  // The code was just sent: count down before another one may be asked for.
+  useEffect(() => {
+    if (wait <= 0) return;
+    const timer = setTimeout(() => setWait((seconds) => seconds - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [wait]);
+
+  const digits = code.replace(/\D/g, "");
+  const ready = digits.length >= 6 && (!recovery || password.length > 0);
+
+  const confirm = async () => {
+    if (digits.length < 6) {
+      setMessage(t("codeBadLength"));
+      return;
+    }
+    if (recovery && password.length < 8) {
+      setMessage(t("shortPassword"));
+      return;
+    }
+    setBusy(true);
+    setMessage(null);
+    const { error } = await supabase.auth.verifyOtp({ email, token: digits, type: purpose });
+    if (error) {
+      setBusy(false);
+      setMessage(friendly(error, t));
+      return;
+    }
+    // Signed in now. For a forgotten password the new one is saved straight away; if that fails, sign out so the
+    // person stays on this screen with the message instead of landing in the app with the old password.
+    if (recovery) {
+      const saved = await supabase.auth.updateUser({ password });
+      if (saved.error) {
+        await supabase.auth.signOut();
+        setBusy(false);
+        setMessage(t("resetNotSaved"));
+        return;
+      }
+    }
+    remember(email);
+    setBusy(false);
+  };
+
+  const resend = async () => {
+    if (wait > 0) return;
+    setMessage(null);
+    const { error } = recovery ? await supabase.auth.resetPasswordForEmail(email) : await supabase.auth.resend({ type: "signup", email });
+    if (error) {
+      setMessage(friendly(error, t));
+      return;
+    }
+    setWait(RESEND_SECONDS);
+    setMessage(t("codeResent"));
+  };
+
+  return (
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <DarkPage style={{ paddingTop: insets.top + 16 }}>
+        <ScrollView contentContainerStyle={styles.formScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View style={styles.headerRow}>
+            <BackButton onPress={onBack} />
+            <LanguageSwitch />
+          </View>
+          <View style={styles.peekWrap}>
+            <CapiPeek peek="curious" width={150} />
+          </View>
+          <Text style={darkStyles.title}>{recovery ? t("resetTitle") : t("codeTitle")}</Text>
+          <Text style={darkStyles.body}>{t(recovery ? "resetBody" : "codeBody", { email })}</Text>
+
+          <TextInput
+            style={[styles.field, styles.code]}
+            placeholder={t("codePlaceholder")}
+            placeholderTextColor={dark.muted}
+            keyboardType="number-pad"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
+            maxLength={10}
+            value={code}
+            onChangeText={setCode}
+          />
+          {recovery ? (
+            <View style={styles.passRow}>
+              <TextInput
+                style={[styles.field, styles.passField]}
+                placeholder={t("newPasswordPlaceholder")}
+                placeholderTextColor={dark.muted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                secureTextEntry={!show}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <Pressable onPress={() => setShow(!show)} style={styles.eye} accessibilityRole="button" accessibilityLabel={show ? t("hidePassword") : t("showPassword")}>
+                <EyeIcon off={!show} />
+              </Pressable>
+            </View>
+          ) : null}
+
+          {message ? <Text style={styles.message}>{message}</Text> : null}
+
+          {busy ? (
+            <ActivityIndicator color={dark.green} style={styles.spinner} />
+          ) : (
+            <Button3D label={recovery ? t("resetButton") : t("codeButton")} disabled={!ready} onPress={confirm} />
+          )}
+          <TextLink label={wait > 0 ? t("codeResendWait", { seconds: wait }) : t("codeResend")} color={dark.blue} onPress={resend} />
+          <Text style={styles.terms}>{t("codeNotReceived")}</Text>
         </ScrollView>
       </DarkPage>
     </KeyboardAvoidingView>
@@ -269,8 +480,9 @@ export function Form({
 }
 
 function BackButton({ onPress }: { onPress: () => void }) {
+  const t = useT();
   return (
-    <Pressable onPress={onPress} style={styles.back} accessibilityRole="button" accessibilityLabel="Bumalik" hitSlop={10}>
+    <Pressable onPress={onPress} style={styles.back} accessibilityRole="button" accessibilityLabel={t("backLabel")} hitSlop={10}>
       <BackIcon color={dark.text} />
     </Pressable>
   );
@@ -283,6 +495,13 @@ const styles = StyleSheet.create({
   actions: { gap: 14 },
   ask: { fontFamily: font.bold, fontSize: 14, letterSpacing: 1.4, color: dark.muted, textAlign: "center", textTransform: "uppercase" },
   back: { width: 44, height: 44, justifyContent: "center" },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  topRight: { alignItems: "flex-end" },
+  switch: { flexDirection: "row", borderWidth: 2, borderColor: dark.line, borderRadius: 14, overflow: "hidden", backgroundColor: dark.field },
+  switchItem: { minWidth: 46, height: 34, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
+  switchOn: { backgroundColor: dark.green },
+  switchText: { fontFamily: font.bold, fontSize: 14, letterSpacing: 1.2, color: dark.muted },
+  switchTextOn: { color: "#1D3B1A" },
   savedScroll: { flexGrow: 1, gap: 14, paddingBottom: 12 },
   account: {
     flexDirection: "row",
@@ -302,6 +521,7 @@ const styles = StyleSheet.create({
   formScroll: { gap: 14, paddingBottom: 20 },
   peekWrap: { alignItems: "center", marginBottom: -4 },
   field: { height: 56, paddingHorizontal: 16, borderRadius: 16, backgroundColor: dark.field, color: dark.text, fontFamily: font.body, fontSize: 18 },
+  code: { textAlign: "center", fontSize: 26, letterSpacing: 6 },
   passRow: { justifyContent: "center" },
   passField: { paddingRight: 56 },
   eye: { position: "absolute", right: 0, width: 54, height: 56, alignItems: "center", justifyContent: "center" },

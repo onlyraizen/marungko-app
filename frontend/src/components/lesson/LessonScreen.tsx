@@ -1,14 +1,16 @@
 import { FACTS, audioKey, matchUtterance, type MatchResult } from "@marungko/shared";
 import { acceptedFor } from "../../content/accepted";
+import { partsFor } from "../../content/parts";
 import { decideAttempt, type Reason } from "../../speech/attempt";
 import { WORD_MS } from "../../speech/wordPace";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { buildTapQuiz } from "../../content/quiz";
+import { buildTapQuiz, quizSize } from "../../content/quiz";
 import { syllabify } from "../../content/syllables";
-import { invalidatePlaybackMode, useGuideAudio } from "../../hooks/useGuideAudio";
+import { invalidatePlaybackMode, useGuideAudio, type Sayable } from "../../hooks/useGuideAudio";
 import { STT_CONTEXT_MODE, useLiveTranscription } from "../../hooks/useLiveTranscription";
 import { playSfx } from "../../hooks/useSfx";
+import { useLang, useT, type Line } from "../../i18n";
 import type { CompleteResult } from "../../services/progress";
 import { useAppStore } from "../../store/useAppStore";
 import { colors } from "../../theme/colors";
@@ -16,8 +18,9 @@ import { font } from "../../theme/fonts";
 import type { Pose } from "../art/assets";
 import FeedbackSheet from "./FeedbackSheet";
 import LessonResult from "./LessonResult";
-import { FEEDBACK, PRAISE } from "./lessonText";
+import { FEEDBACK, PRAISE, praiseAt } from "./lessonText";
 import MicTutorial from "./MicTutorial";
+import PartIntro from "./PartIntro";
 import { exampleFor, pictureOf } from "./pictures";
 import RepeatView from "./RepeatView";
 import TapQuiz from "./TapQuiz";
@@ -46,35 +49,53 @@ type Props = {
   onComplete?: (correct: number, total: number) => Promise<LessonSummary>;
 };
 
-type Phase = "practice" | "quiz" | "result";
+type Phase = "intro" | "practice" | "quiz" | "result";
 
 const POSE: Record<MatchResult["kind"], Pose> = { correct: "wave", almost: "almost", incorrect: "tryAgain" };
 
-/** A right answer is accepted this long after the words match, without waiting for the speech service to hear a pause. */
+/**
+ * A right answer is accepted once the words match AND the child has stopped making sound (a quiet moment at the end),
+ * so a sound that is still going ("moooo") is measured to its end before it is judged. Never sooner than
+ * EARLY_ACCEPT_MS after the match, and never later than EARLY_ACCEPT_MAX_MS (a noisy room never goes quiet).
+ */
 const EARLY_ACCEPT_MS = 450;
+const QUIET_ACCEPT_MS = 250;
+const EARLY_ACCEPT_MAX_MS = 2200;
 
 /**
- * One lesson, in the Duolingo style: Capi says each word and the child says it back (hands-free),
- * then a tap-the-syllables quiz, then the results.
+ * One lesson, in the Duolingo style: Capi says each word and the child says it back (hands-free), then a
+ * tap-the-syllables quiz, then the results. The lesson is taught in parts by number of syllables (one syllable, then
+ * two, ...), each with its own quiz, so a quiz only asks for what that part taught.
  */
 export default function LessonScreen({ title, items, words, baseYuzu, review = false, onDone, onAttempt, onQuizAnswer, onNote, onComplete }: Props) {
-  const { finalText, partialText, error, busy, finished, heardSpeech, isListening, prepare, start, stop, finishNow, confidence, readAttempt } = useLiveTranscription();
-  const slow = useAppStore((state) => state.slowGuide);
+  const { finalText, partialText, error, busy, finished, heardSpeech, isListening, prepare, start, stop, finishNow, confidence, readAttempt, quietForMs } = useLiveTranscription();
+  const t = useT();
+  const lang = useLang();
   const seenTutorial = useAppStore((state) => state.seenMicTutorial);
   const setSeenTutorial = useAppStore((state) => state.setSeenMicTutorial);
   const [tutorial, setTutorial] = useState(!seenTutorial && !review);
-  const setSlow = useAppStore((state) => state.setSlowGuide);
-  const guide = useGuideAudio(slow);
-  const questions = useMemo(() => buildTapQuiz(words), [words]);
+  const guide = useGuideAudio();
 
-  const [phase, setPhase] = useState<Phase>("practice");
+  const itemsKey = items.join("|");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const parts = useMemo(() => partsFor(items), [itemsKey]);
+  const [partIndex, setPartIndex] = useState(0);
+  const part = parts[partIndex];
+  const partItems = part?.items ?? [];
+  const questions = useMemo(() => buildTapQuiz(partItems), [part]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Items and quiz questions of every part: the progress bar fills across the whole lesson.
+  const sizes = useMemo(() => parts.map((p) => p.items.length + quizSize(p.items)), [parts]);
+  const total = sizes.reduce((sum, size) => sum + size, 0);
+  const before = sizes.slice(0, partIndex).reduce((sum, size) => sum + size, 0);
+
+  const [phase, setPhase] = useState<Phase>(parts.length > 1 ? "intro" : "practice");
   const [index, setIndex] = useState(0);
   const [result, setResult] = useState<MatchResult | null>(null);
-  // Why the last attempt was not a pass ("too-fast" gets the slow-down message), and how many tries in a row this word has had.
+  // Why the last attempt was not a pass ("too-fast" and "too-long" get their own message), and how many tries in a row this word has had.
   const [reason, setReason] = useState<Reason>("ok");
   const [misses, setMisses] = useState(0);
   const [devLine, setDevLine] = useState("");
-  const [praise, setPraise] = useState<string>(PRAISE[0]);
+  const [praise, setPraise] = useState<Line>(PRAISE[0] ?? { fil: "Tama!", en: "That's right!" });
   const [combo, setCombo] = useState(0);
   const [earned, setEarned] = useState(0);
   const [practiceCorrect, setPracticeCorrect] = useState(0);
@@ -87,10 +108,13 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
   const reported = useRef(false);
   const correctItems = useRef(new Set<string>());
   const quizCorrect = useRef(0);
+  const quizAsked = useRef(0);
+  const praiseCount = useRef(0);
+  const matchedAt = useRef<number | null>(null);
 
   const wordSet = useMemo(() => new Set(words), [words]);
-  const target = items[index];
-  const practiceDone = index >= items.length;
+  const target = partItems[index];
+  const practiceDone = index >= partItems.length;
   const isSyllable = target !== undefined && !wordSet.has(target);
   const example = target !== undefined && isSyllable ? exampleFor(target) : null;
   const wordPicture = target !== undefined && !isSyllable ? pictureOf(target) : null;
@@ -111,7 +135,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
     const timer = setTimeout(() => guide.sayAll([target]), 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, index, practiceDone, target, tutorial, guide.sayAll]);
+  }, [phase, index, partIndex, practiceDone, target, tutorial, guide.sayAll]);
 
   useEffect(() => {
     if (finished && awaitingResult.current && target !== undefined) {
@@ -125,6 +149,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
         syllables: syllabify(target).length,
         spanMs: attempt.spanMs,
         modelMs: WORD_MS[audioKey(target)],
+        leadMs: attempt.leadMs,
         confidence: attempt.confidence,
       });
       const next = decision.result;
@@ -140,6 +165,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
           kind: next.kind,
           reason: decision.reason,
           spanMs: attempt.spanMs,
+          leadMs: attempt.leadMs,
           tokenSpanMs: attempt.tokenSpanMs,
           ratio: decision.pace ? Number(decision.pace.ratio.toFixed(2)) : null,
           sps: decision.pace ? Number(decision.pace.syllablesPerSecond.toFixed(1)) : null,
@@ -153,22 +179,32 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
         if (!correctItems.current.has(target)) setEarned((n) => n + 1);
         correctItems.current.add(target);
         setPracticeCorrect(correctItems.current.size);
-        setPraise(PRAISE[(correctItems.current.size - 1) % PRAISE.length] ?? PRAISE[0]);
+        setPraise(praiseAt(praiseCount.current, guide.has));
+        praiseCount.current += 1;
         setCombo((n) => n + 1);
       } else {
         setCombo(0);
       }
       onAttempt?.(target, next.heard, next.kind);
     }
-  }, [finished, finalText, partialText, target, onAttempt, readAttempt]);
+  }, [finished, finalText, partialText, target, onAttempt, readAttempt]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // The moment the words match, accept them: no need to wait for the speech service to notice a pause.
+  // The words match: accept them once the child has stopped making sound, without waiting for the speech service to
+  // notice a pause. Waiting for the quiet is what lets a held sound ("moooo") be measured to its end.
   useEffect(() => {
     if (!isListening || !heardSpeech || target === undefined || phase !== "practice") return;
     if (matchUtterance(`${finalText}${partialText}`, target, acceptedFor(target)).kind !== "correct") return;
-    const timer = setTimeout(finishNow, EARLY_ACCEPT_MS);
-    return () => clearTimeout(timer);
-  }, [isListening, heardSpeech, finalText, partialText, target, phase, finishNow]);
+    if (matchedAt.current === null) matchedAt.current = Date.now();
+    const timer = setInterval(() => {
+      const waited = Date.now() - (matchedAt.current ?? Date.now());
+      const quiet = quietForMs();
+      if ((waited >= EARLY_ACCEPT_MS && quiet !== null && quiet >= QUIET_ACCEPT_MS) || waited >= EARLY_ACCEPT_MAX_MS) {
+        clearInterval(timer);
+        finishNow();
+      }
+    }, 50);
+    return () => clearInterval(timer);
+  }, [isListening, heardSpeech, finalText, partialText, target, phase, finishNow, quietForMs]);
 
   // A chime and then Capi's voice after each answer.
   useEffect(() => {
@@ -178,28 +214,47 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
       const timer = setTimeout(() => guide.say(praise), 380);
       return () => clearTimeout(timer);
     }
-    // Too fast is not a mistake: no buzzer, just Capi asking to slow down. From the second miss in a row Capi also
-    // says the word again, slowly, so the child hears it once more before trying.
-    if (reason !== "too-fast") void playSfx("wrong", 0.6);
-    const lines =
+    // Too fast and too long are not mistakes: no buzzer, just Capi asking to slow down or keep the sound short.
+    // From the second miss in a row Capi also says the word again, so the child hears it once more before trying.
+    const gentle = reason === "too-fast" || reason === "too-long";
+    if (!gentle) void playSfx("wrong", 0.6);
+    const lines: Sayable[] =
       misses >= 3
-        ? ["Okay lang! Tuloy tayo."]
+        ? [FEEDBACK.moveOn]
         : reason === "too-fast"
-          ? [FEEDBACK.pace.voice, "Sabihin natin nang paisa-isang tunog."]
-          : [FEEDBACK[result.kind].voice];
-    if (misses === 2 && target !== undefined) lines.push(target);
+          ? [FEEDBACK.slow, FEEDBACK.slowThen]
+          : reason === "too-long"
+            ? [FEEDBACK.short, ...(target !== undefined ? [target] : [])]
+            : [result.kind === "almost" ? FEEDBACK.almost : FEEDBACK.again];
+    if (misses === 2 && target !== undefined && reason !== "too-long") lines.push(target);
     const timer = setTimeout(() => guide.sayAll(lines), 520);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, guide.say]);
 
-  // Reading part finished: on to the quiz, or straight to the results if there is none.
+  // Reading part finished: on to its quiz, or to the next part, or straight to the results if there is nothing left.
   useEffect(() => {
     if (!practiceDone || phase !== "practice") return;
     if (questions.length > 0) setPhase("quiz");
-    else finish();
+    else goNextPart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [practiceDone, phase]);
+
+  /** The quiz of this part is over: the next part starts with its own introduction, or the lesson ends. */
+  function goNextPart() {
+    guide.stop();
+    if (partIndex + 1 < parts.length) {
+      setPartIndex(partIndex + 1);
+      setIndex(0);
+      setResult(null);
+      setReason("ok");
+      setMisses(0);
+      setFlagged(false);
+      setPhase("intro");
+    } else {
+      finish();
+    }
+  }
 
   /** Saves the whole lesson once (reading and quiz together), then shows the results. */
   function finish() {
@@ -208,7 +263,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
     reported.current = true;
     if (!onComplete || review) return;
     setSaving(true);
-    onComplete(correctItems.current.size + quizCorrect.current, items.length + questions.length)
+    onComplete(correctItems.current.size + quizCorrect.current, items.length + quizAsked.current)
       .then(setSummary)
       .catch((caught: unknown) => setSaveError(caught instanceof Error ? caught.message : String(caught)))
       .finally(() => setSaving(false));
@@ -220,6 +275,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
     setResult(null);
     setReason("ok");
     setFlagged(false);
+    matchedAt.current = null;
     awaitingResult.current = true;
     void start(items, target);
   };
@@ -244,21 +300,34 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
     onDone();
   };
 
-  const toggleSlow = () => setSlow(!slow);
-  const total = items.length + questions.length;
+  if (phase === "intro" && part) {
+    return (
+      <PartIntro
+        key={part.id}
+        part={part}
+        number={partIndex + 1}
+        total={parts.length}
+        progress={total > 0 ? before / total : 0}
+        combo={combo}
+        yuzu={baseYuzu + earned}
+        onStart={() => setPhase("practice")}
+        onClose={close}
+      />
+    );
+  }
 
-  if (phase === "quiz") {
+  if (phase === "quiz" && part) {
     return (
       <TapQuiz
+        key={part.id}
         questions={questions}
         guide={guide}
-        slow={slow}
-        onToggleSlow={toggleSlow}
-        progressFrom={items.length / total}
-        progressSpan={questions.length / total}
+        progressFrom={total > 0 ? (before + partItems.length) / total : 0}
+        progressSpan={total > 0 ? questions.length / total : 0}
         combo={combo}
         yuzu={baseYuzu + earned}
         onAnswer={(word, ok, heard, skipped) => {
+          quizAsked.current += 1;
           setQuizScore((current) => ({ correct: current.correct + (ok ? 1 : 0), total: current.total + 1 }));
           if (ok) {
             void playSfx("correct");
@@ -272,7 +341,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
           onQuizAnswer?.(word, ok, heard, skipped);
         }}
         onNote={(word, note) => onNote?.(word, note)}
-        onFinish={finish}
+        onFinish={goNextPart}
         onClose={close}
       />
     );
@@ -309,9 +378,9 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
         ? "noMic"
         : "rest";
   const sheetUp = result !== null && !isListening;
-  const parts = syllabify(target);
-  const slash = parts.map((part) => `/${part}/`).join(" ... ");
-  const heardLine = result && result.heard !== "" ? `Narinig ni Capi: ${result.heard}` : "Walang narinig si Capi.";
+  const targetSyllables = syllabify(target);
+  const slash = targetSyllables.map((syllable) => `/${syllable}/`).join(" ... ");
+  const heardLine = result && result.heard !== "" ? t("heardLine", { heard: result.heard }) : t("heardNothing");
   const dev = __DEV__ ? (
     <Text style={styles.dev}>
       Linaw: {confidence === null ? "-" : `${Math.round(confidence * 100)}%`}
@@ -321,17 +390,18 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
   // After three tries in a row the child is never kept stuck: moving on is the main button.
   const moveOn = misses >= 3;
   const tooFast = reason === "too-fast";
-  const last = index + 1 >= items.length;
+  const tooLong = reason === "too-long";
+  const lastOfLesson = partIndex + 1 >= parts.length && index + 1 >= partItems.length && questions.length === 0;
 
   const sheet =
     sheetUp && result ? (
       result.kind === "correct" ? (
         <FeedbackSheet
           good
-          title="Magaling magsalita!"
-          kicker="Narinig ni Capi:"
-          line={`${parts.join("-")}, tamang-tama ang tunog!`}
-          primaryLabel={last && questions.length === 0 ? "Tapusin" : "Susunod"}
+          title={praise[lang]}
+          kicker={t("heardKicker")}
+          line={t("rightLine", { parts: targetSyllables.join("-") })}
+          primaryLabel={lastOfLesson ? t("finish") : t("next")}
           onPrimary={onNext}
           onFlag={() => {
             setFlagged(true);
@@ -341,7 +411,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
         >
           {fact ? (
             <View style={styles.fact}>
-              <Text style={styles.factTitle}>ALAM MO BA?</Text>
+              <Text style={styles.factTitle}>{t("didYouKnow")}</Text>
               <Text style={styles.factText}>{fact}</Text>
             </View>
           ) : null}
@@ -350,12 +420,12 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
       ) : (
         <FeedbackSheet
           good={false}
-          title={moveOn ? "Okay lang! Tuloy tayo." : tooFast ? "Dahan-dahan lang tayo" : result.kind === "almost" ? "Halos tama!" : "Subukan ulit"}
-          kicker={tooFast ? "Tama ang salita! Sabihin natin nang paisa-isang tunog:" : "Subukan ulit:"}
-          line={tooFast ? `${slash}` : `${slash}, dahan-dahan lang`}
-          primaryLabel={moveOn ? "Tuloy tayo" : "Subukan muli"}
+          title={moveOn ? t("moveOnTitle") : tooFast ? t("slowTitle") : tooLong ? t("shortTitle") : result.kind === "almost" ? t("almostTitle") : t("tryAgainTitle")}
+          kicker={tooFast ? t("slowKicker") : tooLong ? t("shortKicker") : t("tryKicker")}
+          line={tooFast || tooLong ? slash : t("slowlyNote", { slash })}
+          primaryLabel={moveOn ? t("moveOnButton") : t("retryButton")}
           onPrimary={moveOn ? onSkip : onMic}
-          linkLabel={moveOn ? "Subukan muli" : "Laktawan"}
+          linkLabel={moveOn ? t("retryButton") : t("skipLink")}
           onLink={moveOn ? onMic : onSkip}
           onFlag={() => {
             setFlagged(true);
@@ -375,7 +445,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
       item={target}
       isSyllable={isSyllable}
       picture={picture}
-      progress={index / total}
+      progress={total > 0 ? (before + index) / total : 0}
       combo={combo}
       yuzu={baseYuzu + earned}
       talking={guide.speaking}
@@ -384,10 +454,9 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
       verdict={sheetUp && result ? result.kind : null}
       micState={micBlocked ? "blocked" : isListening ? "live" : "ready"}
       micWaiting={busy}
-      slow={slow}
       canSpeak={guide.has(target)}
-      onToggleSlow={toggleSlow}
       onSpeaker={() => guide.sayAll([target])}
+      onSlowSpeaker={() => guide.sayAll([target], { slow: true })}
       onMic={isListening ? stop : busy ? () => undefined : onMic}
       onSkip={onSkip}
       onClose={close}
