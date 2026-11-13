@@ -1,4 +1,5 @@
 import { Image } from "expo-image";
+import { useState } from "react";
 import { StyleSheet, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { font } from "../../theme/fonts";
@@ -25,13 +26,20 @@ export type Scene = "pond" | "plain" | "tall" | "none";
 /** Clouds on top and the pond along the bottom, behind everything (design: Welcome, Details, Loading). */
 function Scenery({ scene }: { scene: Scene }) {
   const { width } = useWindowDimensions();
+  // If a picture fails to load, draw nothing for it: the plain sky is fine, a broken-image icon is not.
+  const [clouds, setClouds] = useState(true);
+  const [pondOk, setPondOk] = useState(true);
   if (scene === "none") return null;
   const pond = scene === "tall" ? AUTH_BG.pondTall : scene === "plain" ? AUTH_BG.pondPlain : AUTH_BG.pond;
   const ratio = scene === "tall" ? 520 / 390 : 260 / 390;
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <Image source={AUTH_BG.clouds} contentFit="fill" style={{ position: "absolute", left: 0, top: 0, width, height: (240 / 390) * width }} />
-      <Image source={pond} contentFit="fill" style={{ position: "absolute", left: 0, bottom: 0, width, height: ratio * width }} />
+      {clouds ? (
+        <Image source={AUTH_BG.clouds} contentFit="fill" onError={() => setClouds(false)} style={{ position: "absolute", left: 0, top: 0, width, height: (240 / 390) * width }} />
+      ) : null}
+      {pondOk ? (
+        <Image source={pond} contentFit="fill" onError={() => setPondOk(false)} style={{ position: "absolute", left: 0, bottom: 0, width, height: ratio * width }} />
+      ) : null}
     </View>
   );
 }
