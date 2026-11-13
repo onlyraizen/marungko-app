@@ -1042,5 +1042,395 @@
     "variant": "2-period",
     "gainDb": 1.9,
     "compiledAt": "2026-10-16T05:25:49.205Z"
+  },
+  "ma": {
+    "text": "ma",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:30.602Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.218Z"
+  },
+  "sa": {
+    "text": "sa",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:31.224Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.222Z"
+  },
+  "mi": {
+    "text": "mi",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:31.866Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.224Z"
+  },
+  "si": {
+    "text": "si",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:32.531Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.225Z"
+  },
+  "mo": {
+    "text": "mo",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:33.167Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.229Z"
+  },
+  "so": {
+    "text": "so",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:33.890Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.231Z"
+  },
+  "ba": {
+    "text": "ba",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:34.520Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.233Z"
+  },
+  "be": {
+    "text": "be",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:35.150Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.236Z"
+  },
+  "bi": {
+    "text": "bi",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:35.819Z",
+    "variant": "dots",
+    "pickedAt": "2026-11-08T18:27:04.238Z"
+  },
+  "bo": {
+    "text": "bo",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:36.390Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.241Z"
+  },
+  "bu": {
+    "text": "bu",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:37.065Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.244Z"
+  },
+  "me": {
+    "text": "me",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:37.590Z",
+    "variant": "sme",
+    "pickedAt": "2026-11-08T18:27:10.663Z"
+  },
+  "se": {
+    "text": "se",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:38.265Z",
+    "variant": "slow",
+    "pickedAt": "2026-11-08T18:27:04.246Z"
+  },
+  "mu": {
+    "text": "mu",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:38.885Z",
+    "variant": "slow",
+    "pickedAt": "2026-11-08T18:27:04.248Z"
+  },
+  "su": {
+    "text": "su",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:39.589Z",
+    "variant": "slow",
+    "pickedAt": "2026-11-08T18:27:04.251Z"
+  },
+  "ta": {
+    "text": "ta",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:40.295Z",
+    "variant": "slow",
+    "pickedAt": "2026-11-08T18:27:04.254Z"
+  },
+  "te": {
+    "text": "te",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:40.975Z",
+    "variant": "slow",
+    "pickedAt": "2026-11-08T18:27:04.256Z"
+  },
+  "ti": {
+    "text": "ti",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:41.492Z",
+    "variant": "slow",
+    "pickedAt": "2026-11-08T18:27:04.258Z"
+  },
+  "to": {
+    "text": "to",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:42.023Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.261Z"
+  },
+  "tu": {
+    "text": "tu",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:42.680Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.263Z"
+  },
+  "ka": {
+    "text": "ka",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:43.260Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.265Z"
+  },
+  "ke": {
+    "text": "ke",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:43.786Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.268Z"
+  },
+  "ki": {
+    "text": "ki",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:44.483Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.270Z"
+  },
+  "ko": {
+    "text": "ko",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:45.171Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.272Z"
+  },
+  "ku": {
+    "text": "ku",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:45.884Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.274Z"
+  },
+  "la": {
+    "text": "la",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:46.944Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.276Z"
+  },
+  "le": {
+    "text": "le",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:47.616Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.279Z"
+  },
+  "li": {
+    "text": "li",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:48.281Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.281Z"
+  },
+  "lo": {
+    "text": "lo",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:49.268Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.284Z"
+  },
+  "lu": {
+    "text": "lu",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:49.957Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.286Z"
+  },
+  "ya": {
+    "text": "ya",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:50.498Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.288Z"
+  },
+  "ye": {
+    "text": "ye",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:51.667Z",
+    "variant": "slow",
+    "pickedAt": "2026-11-08T18:27:04.291Z"
+  },
+  "yo": {
+    "text": "yo",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:53.079Z",
+    "variant": "dots",
+    "pickedAt": "2026-11-08T18:27:04.294Z"
+  },
+  "yu": {
+    "text": "yu",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:56.661Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.296Z"
+  },
+  "na": {
+    "text": "na",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:57.303Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.299Z"
+  },
+  "ga": {
+    "text": "ga",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:58.530Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.302Z"
+  },
+  "pa": {
+    "text": "pa",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:27:59.155Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.304Z"
+  },
+  "ra": {
+    "text": "ra",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:28:00.074Z",
+    "variant": "commas",
+    "pickedAt": "2026-11-08T18:27:04.307Z"
+  },
+  "da": {
+    "text": "da",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:28:00.701Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.309Z"
+  },
+  "ha": {
+    "text": "ha",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:28:01.335Z",
+    "variant": "plain",
+    "pickedAt": "2026-11-08T18:27:04.311Z"
+  },
+  "wa": {
+    "text": "wa",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-10-18T14:28:01.962Z",
+    "variant": "slow",
+    "pickedAt": "2026-11-08T18:27:04.314Z"
+  },
+  "dahan-dahan-lang-tayo": {
+    "text": "Dahan-dahan lang tayo.",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-11-08T19:25:50.246Z"
+  },
+  "sabihin-natin-nang-paisa-isang-tunog": {
+    "text": "Sabihin natin nang paisa-isang tunog.",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-11-08T19:25:52.285Z"
+  },
+  "okay-lang-tuloy-tayo": {
+    "text": "Okay lang! Tuloy tayo.",
+    "voice": "Maya",
+    "model": "tts-rt-v2",
+    "language": "tl",
+    "generatedAt": "2026-11-08T19:25:54.035Z"
   }
 }
