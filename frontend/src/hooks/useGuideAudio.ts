@@ -29,7 +29,7 @@ export function invalidatePlaybackMode(): void {
 
 /**
  * Plays the pre-generated guide voice. Every file is bundled in the app; nothing is fetched.
- * `{ slow: true }` plays that request slower (pitch is kept), so a child can hear each sound: it is the turtle
+ * `{ slow: true }` plays that request slower (pitch is kept), so a child can hear each sound: it is the "Mabagal"
  * button in the lesson, one tap for one replay, not a setting that stays on.
  */
 export function useGuideAudio() {

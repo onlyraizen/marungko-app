@@ -18,7 +18,7 @@ import ExplainScreen from "./ExplainScreen";
 import FeedbackSheet from "./FeedbackSheet";
 import { praiseAt } from "./lessonText";
 import RoundSpeaker from "./RoundSpeaker";
-import SlowSpeaker from "./SlowSpeaker";
+import { SpeakerWithHint, useSpeakerHint } from "./GuideHint";
 
 type Props = {
   questions: readonly TapQuestion[];
@@ -50,6 +50,7 @@ export default function TapQuiz(props: Props) {
   const [flagged, setFlagged] = useState(false);
   const [praise, setPraise] = useState<Line | null>(null);
   const praiseIndex = useRef(0);
+  const hint = useSpeakerHint();
 
   const question = questions[qi];
   const capiSize = Math.min(184, Math.round(width * 0.47));
@@ -111,10 +112,27 @@ export default function TapQuiz(props: Props) {
           <CapiActor size={capiSize} talking={guide.speaking} listening={false} pose={pose} />
           <View style={styles.right}>
             <Bubble tail="left" tailTop={50} style={styles.bubble}>
-              <RoundSpeaker size={46} disabled={guide.speaking} onPress={() => guide.say(question.word)} />
-              <SlowSpeaker size={36} disabled={guide.speaking} onPress={() => guide.say(question.word, { slow: true })} />
-              <WaveIcon width={Math.max(36, Math.min(96, width - capiSize - 184))} height={40} />
+              <SpeakerWithHint size={46} direction="up" show={hint.show && !checked}>
+                <RoundSpeaker
+                  size={46}
+                  disabled={guide.speaking}
+                  onPress={() => {
+                    hint.used();
+                    guide.say(question.word);
+                  }}
+                />
+              </SpeakerWithHint>
+              <WaveIcon width={Math.max(36, Math.min(96, width - capiSize - 148))} height={40} />
             </Bubble>
+            <TextLink
+              label={t("slowText")}
+              color={colors.infoInk}
+              style={styles.slow}
+              onPress={() => {
+                hint.used();
+                guide.say(question.word, { slow: true });
+              }}
+            />
           </View>
         </View>
 
@@ -202,6 +220,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: "row", alignItems: "flex-start", marginLeft: -14, marginTop: 4 },
   right: { flex: 1, marginTop: 36, marginLeft: -6 },
   bubble: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 82, paddingHorizontal: 12, paddingVertical: 0 },
+  slow: { alignSelf: "flex-end", paddingHorizontal: 4 },
   answer: { height: 148, marginTop: 8 },
   line: { position: "absolute", left: 0, right: 0, top: 72, height: 2, backgroundColor: "#A9CFE0" },
   answerTiles: { position: "absolute", left: 0, right: 0, top: 8, flexDirection: "row", flexWrap: "wrap", columnGap: 10, rowGap: 16 },

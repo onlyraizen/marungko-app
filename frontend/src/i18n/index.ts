@@ -108,6 +108,7 @@ const S = {
   explain: { fil: "Ipaliwanag ang sagot ko", en: "Explain my answer" },
   listenLabel: { fil: "Pakinggan", en: "Listen" },
   slowLabel: { fil: "Pakinggan nang mabagal", en: "Listen slowly" },
+  slowText: { fil: "Mabagal", en: "Slow" },
   partWord: { fil: "Bahagi {n} ng {total}", en: "Part {n} of {total}" },
   part1: { fil: "Isang pantig", en: "One syllable" },
   part2: { fil: "Dalawang pantig", en: "Two syllables" },

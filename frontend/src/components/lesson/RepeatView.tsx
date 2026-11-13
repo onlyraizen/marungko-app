@@ -13,14 +13,13 @@ import ExerciseFrame from "./ExerciseFrame";
 import ListeningPill from "./ListeningPill";
 import PictureCard from "./PictureCard";
 import RoundSpeaker from "./RoundSpeaker";
-import SlowSpeaker from "./SlowSpeaker";
+import { SpeakerWithHint, useSpeakerHint } from "./GuideHint";
 
-/** The compact bubble from the design: a blue speaker button beside the word, the bubble hugging both. */
-const SPEAKER_SIZE = 40;
-const SLOW_SIZE = 34;
-const SPEAKER_GAP = 10;
-const BUBBLE_PADDING = 12;
-const MAX_WORD_SIZE = 40;
+/** The word card from the design: a 290 x 100 card, a 54 px blue speaker beside the word in 56 px Baloo. */
+const SPEAKER_SIZE = 54;
+const SPEAKER_GAP = 16;
+const BUBBLE_PADDING = 14;
+const MAX_WORD_SIZE = 56;
 /** Capi's canvas has an empty strip on the left (body starts at 19.6%); keep a little of it. */
 const CAPI_TRIM = 0.18;
 
@@ -40,7 +39,7 @@ type Props = {
   micWaiting: boolean;
   canSpeak: boolean;
   onSpeaker: () => void;
-  /** The turtle: say it again, slowly (once). */
+  /** "Mabagal": say it again, slowly (once). */
   onSlowSpeaker: () => void;
   onMic: () => void;
   onSkip: () => void;
@@ -74,10 +73,11 @@ function DottedWord({ text, color, room }: { text: string; color: string; room: 
 export default function RepeatView(props: Props) {
   const { width } = useWindowDimensions();
   const t = useT();
-  const capiSize = Math.min(230, Math.max(170, width - 168));
+  const capiSize = Math.min(250, Math.max(170, width - 150));
+  const speakerHint = useSpeakerHint();
   // The bubble hugs its content (speaker + word), centred on the screen, never wider than the screen minus margins.
-  const maxBubble = Math.min(320, width - 48);
-  const room = maxBubble - BUBBLE_PADDING * 2 - 4 - SPEAKER_SIZE - SLOW_SIZE - SPEAKER_GAP * 2;
+  const maxBubble = Math.min(290, width - 48);
+  const room = maxBubble - BUBBLE_PADDING * 2 - 4 - SPEAKER_SIZE - SPEAKER_GAP;
   const color = props.verdict === "correct" ? colors.primaryInk : props.verdict === "almost" || props.verdict === "incorrect" ? colors.dangerDark : colors.ink;
   const answered = props.verdict !== null;
   const hint = props.isSyllable ? t("micHintSyllable") : t("micHintWord");
@@ -91,18 +91,35 @@ export default function RepeatView(props: Props) {
       onClose={props.onClose}
     >
       <View style={styles.bubbleRow}>
-        <View style={{ maxWidth: maxBubble }}>
+        <View style={{ width: maxBubble }}>
           <Bubble tail="bottomLeft" style={styles.bubble}>
             <View style={styles.bubbleInner}>
               {!answered ? (
-                <>
-                  <RoundSpeaker size={SPEAKER_SIZE} disabled={props.listening || !props.canSpeak} onPress={props.onSpeaker} />
-                  <SlowSpeaker size={SLOW_SIZE} disabled={props.listening || !props.canSpeak} onPress={props.onSlowSpeaker} />
-                </>
+                <SpeakerWithHint size={SPEAKER_SIZE} direction="right" show={speakerHint.show && !props.listening}>
+                  <RoundSpeaker
+                    size={SPEAKER_SIZE}
+                    disabled={props.listening || !props.canSpeak}
+                    onPress={() => {
+                      speakerHint.used();
+                      props.onSpeaker();
+                    }}
+                  />
+                </SpeakerWithHint>
               ) : null}
               <DottedWord text={props.item} color={color} room={room} />
             </View>
           </Bubble>
+          {!answered ? (
+            <TextLink
+              label={t("slowText")}
+              color={colors.infoInk}
+              style={styles.slow}
+              onPress={() => {
+                speakerHint.used();
+                props.onSlowSpeaker();
+              }}
+            />
+          ) : null}
         </View>
       </View>
 
@@ -140,7 +157,8 @@ export default function RepeatView(props: Props) {
 
 const styles = StyleSheet.create({
   bubbleRow: { marginTop: 14, alignItems: "center" },
-  bubble: { minWidth: 190, borderRadius: 22, paddingVertical: 6, paddingHorizontal: BUBBLE_PADDING },
+  bubble: { minHeight: 100, justifyContent: "center", borderRadius: 26, paddingVertical: 6, paddingHorizontal: BUBBLE_PADDING },
+  slow: { alignSelf: "flex-end", paddingHorizontal: 4 },
   bubbleInner: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPEAKER_GAP },
   wordBox: { alignItems: "center", flexShrink: 1 },
   word: { fontFamily: font.display, letterSpacing: 1, includeFontPadding: false, textAlign: "center" },

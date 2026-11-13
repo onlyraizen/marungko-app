@@ -189,7 +189,7 @@ function Page({ route, go, onTutorial, ...p }: Props & { route: Route; go: (rout
           <LanguageRow />
           {route === "prefs" ? <AnimationsToggle /> : null}
           <Text style={styles.body}>
-            Slow voice is now in the lesson: tap the turtle next to the speaker to hear a word again, slowly.
+            Slow voice is now in the lesson: tap "Mabagal" under the speaker to hear a word again, slowly.
           </Text>
           {route === "sound" ? (
             <Text style={styles.body}>
