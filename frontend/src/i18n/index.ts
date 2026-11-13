@@ -109,6 +109,7 @@ const S = {
   listenLabel: { fil: "Pakinggan", en: "Listen" },
   slowLabel: { fil: "Pakinggan nang mabagal", en: "Listen slowly" },
   slowText: { fil: "Mabagal", en: "Slow" },
+  guideOk: { fil: "Sige", en: "OK" },
   partWord: { fil: "Bahagi {n} ng {total}", en: "Part {n} of {total}" },
   part1: { fil: "Isang pantig", en: "One syllable" },
   part2: { fil: "Dalawang pantig", en: "Two syllables" },

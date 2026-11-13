@@ -32,6 +32,10 @@ type AppState = {
   /** The day (YYYY-MM-DD) each child was last told their streak ended, so Capi says it only once. */
   streakNotice: Record<string, string>;
   setStreakNotice: (childId: string, day: string) => void;
+  /** First-time guides (arrow coach marks) already seen, keyed "<child or device>:<guide id>". See guides/coach.ts. */
+  seenGuides: Record<string, boolean>;
+  markGuideSeen: (key: string) => void;
+  resetGuides: () => void;
   /** The one-tap microphone tutorial has been shown once. */
   seenMicTutorial: boolean;
   setSeenMicTutorial: (value: boolean) => void;
@@ -74,6 +78,9 @@ export const useAppStore = create<AppState>()(
       setStreakNotice: (childId, day) => set((state) => ({ streakNotice: { ...state.streakNotice, [childId]: day } })),
       animations: true,
       setAnimations: (value) => set({ animations: value }),
+      seenGuides: {},
+      markGuideSeen: (key) => set((state) => (state.seenGuides[key] ? state : { seenGuides: { ...state.seenGuides, [key]: true } })),
+      resetGuides: () => set({ seenGuides: {} }),
       seenMicTutorial: false,
       setSeenMicTutorial: (value) => set({ seenMicTutorial: value }),
       savedAccounts: [],

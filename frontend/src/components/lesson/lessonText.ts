@@ -54,6 +54,9 @@ export function lessonLine(correct: number, total: number): Line {
   return { fil: "Magaling ang pagsisikap mo! Subukan natin ulit.", en: "You worked so hard! Let's try again." };
 }
 
+/** Capi's short prompt when a first-time guide appears. */
+export const COACH_LINE: Line = { fil: "Pindutin dito!", en: "Tap here!" };
+
 /** Every line above, for the phrase check (scripts/phrases-check.mts). */
 export const ALL_LINES: readonly Line[] = [
   ...PRAISE,
@@ -63,4 +66,5 @@ export const ALL_LINES: readonly Line[] = [
   lessonLine(0.5, 1),
   lessonLine(0, 1),
   { fil: "Magaling, tapos na ang aralin!", en: "Great job, lesson complete!" },
+  COACH_LINE,
 ];

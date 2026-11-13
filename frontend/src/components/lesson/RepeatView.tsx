@@ -13,7 +13,8 @@ import ExerciseFrame from "./ExerciseFrame";
 import ListeningPill from "./ListeningPill";
 import PictureCard from "./PictureCard";
 import RoundSpeaker from "./RoundSpeaker";
-import { SpeakerWithHint, useSpeakerHint } from "./GuideHint";
+import { useCoach, type CoachVoice } from "../../guides/coach";
+import { GuideTarget } from "./GuideHint";
 
 /** The word card from the design: a 290 x 100 card, a 54 px blue speaker beside the word in 56 px Baloo. */
 const SPEAKER_SIZE = 54;
@@ -44,6 +45,7 @@ type Props = {
   onMic: () => void;
   onSkip: () => void;
   onClose: () => void;
+  coachVoice?: CoachVoice;
   /** The feedback sheet, drawn over the bottom of the screen. */
   sheet: ReactNode;
 };
@@ -74,7 +76,7 @@ export default function RepeatView(props: Props) {
   const { width } = useWindowDimensions();
   const t = useT();
   const capiSize = Math.min(250, Math.max(170, width - 150));
-  const speakerHint = useSpeakerHint();
+  const coach = useCoach(["speaker_button", "mic_button"], props.coachVoice);
   // The bubble hugs its content (speaker + word), centred on the screen, never wider than the screen minus margins.
   const maxBubble = Math.min(290, width - 48);
   const room = maxBubble - BUBBLE_PADDING * 2 - 4 - SPEAKER_SIZE - SPEAKER_GAP;
@@ -95,16 +97,24 @@ export default function RepeatView(props: Props) {
           <Bubble tail="bottomLeft" style={styles.bubble}>
             <View style={styles.bubbleInner}>
               {!answered ? (
-                <SpeakerWithHint size={SPEAKER_SIZE} direction="right" show={speakerHint.show && !props.listening}>
+                <GuideTarget
+                  direction="right"
+                  ring
+                  show={coach.current === "speaker_button" && !props.listening}
+                  onDismiss={() => coach.done("speaker_button")}
+                  okLabel={t("guideOk")}
+                  width={SPEAKER_SIZE}
+                  height={SPEAKER_SIZE}
+                >
                   <RoundSpeaker
                     size={SPEAKER_SIZE}
                     disabled={props.listening || !props.canSpeak}
                     onPress={() => {
-                      speakerHint.used();
+                      coach.done("speaker_button");
                       props.onSpeaker();
                     }}
                   />
-                </SpeakerWithHint>
+                </GuideTarget>
               ) : null}
               <DottedWord text={props.item} color={color} room={room} />
             </View>
@@ -115,7 +125,7 @@ export default function RepeatView(props: Props) {
               color={colors.infoInk}
               style={styles.slow}
               onPress={() => {
-                speakerHint.used();
+                coach.done("speaker_button");
                 props.onSlowSpeaker();
               }}
             />
@@ -135,12 +145,25 @@ export default function RepeatView(props: Props) {
       {!answered ? (
         <View style={styles.micArea}>
           {props.listening ? <ListeningPill /> : <Text style={styles.hint}>{props.micState === "blocked" ? t("micNeeded") : hint}</Text>}
-          <MicButton
-            state={props.micState === "blocked" ? "blocked" : props.listening ? "live" : "ready"}
-            waiting={props.micWaiting}
-            onPress={props.onMic}
-            label={props.listening ? t("micStopLabel") : t("micSpeakLabel")}
-          />
+          <GuideTarget
+            direction="right"
+            ring
+            show={coach.current === "mic_button" && !props.listening}
+            onDismiss={() => coach.done("mic_button")}
+            okLabel={t("guideOk")}
+            width={104}
+            height={104}
+          >
+            <MicButton
+              state={props.micState === "blocked" ? "blocked" : props.listening ? "live" : "ready"}
+              waiting={props.micWaiting}
+              onPress={() => {
+                coach.done("mic_button");
+                props.onMic();
+              }}
+              label={props.listening ? t("micStopLabel") : t("micSpeakLabel")}
+            />
+          </GuideTarget>
           {props.listening ? (
             <Text style={styles.stop}>{t("stopRecording")}</Text>
           ) : (

@@ -5,7 +5,7 @@ import { decideAttempt, type Reason } from "../../speech/attempt";
 import { WORD_MS } from "../../speech/wordPace";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { buildTapQuiz, quizSize } from "../../content/quiz";
+import { QUIZ_QUESTIONS, buildTapQuiz, quizSize } from "../../content/quiz";
 import { syllabify } from "../../content/syllables";
 import { invalidatePlaybackMode, useGuideAudio, type Sayable } from "../../hooks/useGuideAudio";
 import { STT_CONTEXT_MODE, useLiveTranscription } from "../../hooks/useLiveTranscription";
@@ -20,6 +20,7 @@ import FeedbackSheet from "./FeedbackSheet";
 import LessonResult from "./LessonResult";
 import { FEEDBACK, PRAISE, praiseAt } from "./lessonText";
 import MicTutorial from "./MicTutorial";
+import { hasPicture } from "./pictures";
 import PartIntro from "./PartIntro";
 import { exampleFor, pictureOf } from "./pictures";
 import RepeatView from "./RepeatView";
@@ -75,6 +76,14 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
   const setSeenTutorial = useAppStore((state) => state.setSeenMicTutorial);
   const [tutorial, setTutorial] = useState(!seenTutorial && !review);
   const guide = useGuideAudio();
+  // Capi's short "Pindutin dito!" when a first-time arrow guide appears (skipped while a word is being said).
+  const coachVoice = {
+    say: (line: Line) => {
+      if (guide.has(line)) guide.say(line);
+    },
+    stop: guide.stop,
+    busy: guide.speaking,
+  };
 
   const itemsKey = items.join("|");
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,7 +91,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
   const [partIndex, setPartIndex] = useState(0);
   const part = parts[partIndex];
   const partItems = part?.items ?? [];
-  const questions = useMemo(() => buildTapQuiz(partItems), [part]); // eslint-disable-line react-hooks/exhaustive-deps
+  const questions = useMemo(() => buildTapQuiz(partItems, QUIZ_QUESTIONS, hasPicture), [part]); // eslint-disable-line react-hooks/exhaustive-deps
   // Items and quiz questions of every part: the progress bar fills across the whole lesson.
   const sizes = useMemo(() => parts.map((p) => p.items.length + quizSize(p.items)), [parts]);
   const total = sizes.reduce((sum, size) => sum + size, 0);
@@ -312,6 +321,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
         yuzu={baseYuzu + earned}
         onStart={() => setPhase("practice")}
         onClose={close}
+        coachVoice={coachVoice}
       />
     );
   }
@@ -322,6 +332,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
         key={part.id}
         questions={questions}
         guide={guide}
+        coachVoice={coachVoice}
         progressFrom={total > 0 ? (before + partItems.length) / total : 0}
         progressSpan={total > 0 ? questions.length / total : 0}
         combo={combo}
@@ -461,6 +472,7 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
       onSkip={onSkip}
       onClose={close}
       sheet={sheet}
+      coachVoice={coachVoice}
     />
       {tutorial ? (
         <MicTutorial

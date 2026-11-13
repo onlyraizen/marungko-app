@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Animated, Easing, View } from "react-native";
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { G, Path } from "react-native-svg";
 import { colors } from "../../theme/colors";
+import { font } from "../../theme/fonts";
 
 /**
  * "Pindutin ito": a pulsing coral ring and a bouncing yellow arrow around the speaker button.
@@ -17,7 +18,10 @@ const RING_BOX_PER_SPEAKER = 120 / 46;
 
 type Direction = "up" | "right";
 
-export function GuideArrow({ size, direction }: { size: number; direction: Direction }) {
+type Dir = Direction | "down" | "left";
+const ROTATION: Record<Dir, number> = { up: 0, right: 90, down: 180, left: 270 };
+
+export function GuideArrow({ size, direction }: { size: number; direction: Dir }) {
   const t = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     const ease = Easing.bezier(0.4, 0, 0.6, 1);
@@ -32,19 +36,18 @@ export function GuideArrow({ size, direction }: { size: number; direction: Direc
   }, [t]);
 
   const k = size / 120;
-  // The design moves the arrow between two positions (in the 120-unit box): up 14 -> 5, right 4 -> 13.
-  const translate =
-    direction === "up"
-      ? { translateX: 10 * k, translateY: t.interpolate({ inputRange: [0, 1], outputRange: [14 * k, 5 * k] }) }
-      : { translateX: t.interpolate({ inputRange: [0, 1], outputRange: [4 * k, 13 * k] }), translateY: 8 * k };
-  const rotate = direction === "up" ? "rotate(0 50 50)" : "rotate(90 50 50)";
+  // The design moves the arrow between two positions (in the 120-unit box), always toward the thing it points at.
+  const move = (from: number, to: number) => t.interpolate({ inputRange: [0, 1], outputRange: [from * k, to * k] });
+  const translateX = direction === "right" ? move(4, 13) : direction === "left" ? move(13, 4) : 10 * k;
+  const translateY = direction === "up" ? move(14, 5) : direction === "down" ? move(5, 14) : 8 * k;
+  const rotate = `rotate(${ROTATION[direction]} 50 50)`;
 
   return (
     <Animated.View
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={{ width: size, height: size, transform: [{ translateX: translate.translateX }, { translateY: translate.translateY }] }}
+      style={{ width: size, height: size, transform: [{ translateX }, { translateY }] }}
     >
       <Svg width={size} height={size} viewBox="0 0 120 120">
         <G transform="translate(0 3)">
@@ -106,42 +109,87 @@ export function PulseRing({ speakerSize }: { speakerSize: number }) {
   );
 }
 
-// Shown until the child has tapped a speaker once in this session; after that it would only nag.
-let speakerTapped = false;
 
-/** `show` is true until the first tap on a speaker; call `used()` from the speaker's onPress. */
-export function useSpeakerHint() {
-  const [show, setShow] = useState(!speakerTapped);
-  const used = useCallback(() => {
-    speakerTapped = true;
-    setShow(false);
-  }, []);
-  return { show, used };
-}
+const PILL_H = 36;
 
 /**
- * Wraps a speaker button of `size` and draws the hint around it. "up": the arrow sits under the button
- * (the quiz). "right": the arrow sits to the left and points at it (repeat after Capi).
+ * Wraps one element and, while `show` is true, draws the first-time guide around it: an arrow that bounces toward it,
+ * a pulse ring (round buttons), and a large "Sige" button. Tapping the element itself also dismisses it: the caller
+ * does that by calling `onDismiss` from the element's onPress, so a child can never be stuck behind the guide.
  */
-export function SpeakerWithHint({ size, direction, show, children }: { size: number; direction: Direction; show: boolean; children: ReactNode }) {
-  const arrow = direction === "up" ? Math.round(size * 1.39) : size;
+export function GuideTarget({
+  direction,
+  show,
+  onDismiss,
+  okLabel,
+  width,
+  height,
+  ring = false,
+  arrowSize,
+  children,
+}: {
+  direction: Dir;
+  show: boolean;
+  onDismiss: () => void;
+  okLabel: string;
+  width: number;
+  height: number;
+  ring?: boolean;
+  arrowSize?: number;
+  children: ReactNode;
+}) {
+  const arrow = arrowSize ?? Math.round(Math.min(Math.max(width, height) * 1.2, 64));
+  const gap = ring ? Math.round(Math.min(width, height) * 0.55) : 6;
+  const centerX = (width - arrow) / 2;
+  const centerY = (height - arrow) / 2;
+  let arrowPos = { left: centerX, top: height + 2 };
+  let pillPos: { left?: number; right?: number; top: number } = { left: width / 2 - 36, top: height + 2 + arrow };
+  if (direction === "down") {
+    arrowPos = { left: centerX, top: -arrow - 2 };
+    pillPos = { left: width / 2 - 36, top: -arrow - 2 - PILL_H - 4 };
+  } else if (direction === "right") {
+    arrowPos = { left: -arrow - gap, top: centerY };
+    pillPos = { left: -arrow - gap - 4, top: centerY + arrow };
+  } else if (direction === "left") {
+    arrowPos = { left: width + gap, top: centerY };
+    pillPos = { left: width + gap, top: centerY + arrow };
+  }
   return (
-    <View style={{ width: size, height: size }}>
-      {show ? <PulseRing speakerSize={size} /> : null}
+    <View style={{ width, height }}>
+      {show && ring ? <PulseRing speakerSize={Math.min(width, height)} /> : null}
       {children}
       {show ? (
-        <View
-          pointerEvents="none"
-          style={
-            direction === "up"
-              ? { position: "absolute", top: size + 2, left: (size - arrow) / 2 }
-              : { position: "absolute", top: -2, left: -Math.round(size * 0.55) - arrow }
-          }
-        >
-          <GuideArrow size={arrow} direction={direction} />
-        </View>
+        <>
+          <View pointerEvents="none" style={[{ position: "absolute" }, arrowPos]}>
+            <GuideArrow size={arrow} direction={direction} />
+          </View>
+          <Pressable
+            onPress={onDismiss}
+            accessibilityRole="button"
+            accessibilityLabel={okLabel}
+            hitSlop={8}
+            style={[styles.pill, pillPos]}
+          >
+            <Text style={styles.pillText}>{okLabel}</Text>
+          </Pressable>
+        </>
       ) : null}
     </View>
   );
 }
 
+const styles = StyleSheet.create({
+  pill: {
+    position: "absolute",
+    minWidth: 72,
+    height: PILL_H,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 18,
+    backgroundColor: colors.accent,
+    borderBottomWidth: 4,
+    borderBottomColor: colors.accentDark,
+  },
+  pillText: { fontFamily: font.bold, fontSize: 14, letterSpacing: 1.4, color: colors.ink },
+});

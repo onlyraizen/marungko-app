@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { LessonPart } from "../../content/parts";
 import { useT } from "../../i18n";
@@ -6,7 +6,9 @@ import { colors } from "../../theme/colors";
 import { font } from "../../theme/fonts";
 import { Capi } from "../art/Capi";
 import Button3D from "../ui/Button3D";
+import { useCoach, type CoachVoice } from "../../guides/coach";
 import ExerciseFrame from "./ExerciseFrame";
+import { GuideTarget } from "./GuideHint";
 
 type Props = {
   part: LessonPart;
@@ -18,11 +20,14 @@ type Props = {
   yuzu: number;
   onStart: () => void;
   onClose: () => void;
+  coachVoice?: CoachVoice;
 };
 
 /** Shown before each part of a lesson ("Dalawang pantig"), so a child knows what kind of words come next. */
-export default function PartIntro({ part, number, total, progress, combo, yuzu, onStart, onClose }: Props) {
+export default function PartIntro({ part, number, total, progress, combo, yuzu, onStart, onClose, coachVoice }: Props) {
   const t = useT();
+  const { width } = useWindowDimensions();
+  const coach = useCoach(["lesson_intro"], coachVoice);
   const insets = useSafeAreaInsets();
   return (
     <ExerciseFrame title={t("partWord", { n: number, total })} progress={progress} combo={combo} yuzu={yuzu} onClose={onClose}>
@@ -32,7 +37,22 @@ export default function PartIntro({ part, number, total, progress, combo, yuzu, 
         <Text style={styles.text}>{t(part.body)}</Text>
       </View>
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 6 }]}>
-        <Button3D label={t("partGo")} onPress={onStart} />
+        <GuideTarget
+          direction="down"
+          show={coach.current === "lesson_intro"}
+          onDismiss={() => coach.done("lesson_intro")}
+          okLabel={t("guideOk")}
+          width={width - 40}
+          height={62}
+        >
+          <Button3D
+            label={t("partGo")}
+            onPress={() => {
+              coach.done("lesson_intro");
+              onStart();
+            }}
+          />
+        </GuideTarget>
       </View>
     </ExerciseFrame>
   );

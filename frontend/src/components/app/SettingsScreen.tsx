@@ -180,6 +180,26 @@ function AnimationsToggle() {
   );
 }
 
+function GuidesReset() {
+  const resetGuides = useAppStore((state) => state.resetGuides);
+  const [done, setDone] = useState(false);
+  return (
+    <View style={{ gap: 8 }}>
+      <Text style={styles.body}>
+        The yellow arrows that show a child where to tap appear once for each new button. Reset them to see them again.
+      </Text>
+      <Button3D
+        label={done ? "Guides reset" : "Reset the guides"}
+        tone="info"
+        onPress={() => {
+          resetGuides();
+          setDone(true);
+        }}
+      />
+    </View>
+  );
+}
+
 function Page({ route, go, onTutorial, ...p }: Props & { route: Route; go: (route: Route) => void; onTutorial: () => void }) {
   switch (route) {
     case "prefs":
@@ -188,6 +208,7 @@ function Page({ route, go, onTutorial, ...p }: Props & { route: Route; go: (rout
         <>
           <LanguageRow />
           {route === "prefs" ? <AnimationsToggle /> : null}
+          {route === "prefs" ? <GuidesReset /> : null}
           <Text style={styles.body}>
             Slow voice is now in the lesson: tap "Mabagal" under the speaker to hear a word again, slowly.
           </Text>

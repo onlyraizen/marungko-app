@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { UnitSchema, unitItems } from "../packages/shared/dist/index.js";
 import { partsFor } from "../frontend/src/content/parts.ts";
@@ -25,6 +25,9 @@ const units = readdirSync(join(root, "content", "units"))
   .sort()
   .map((name) => UnitSchema.parse(JSON.parse(readFileSync(join(root, "content", "units", name), "utf8"))));
 
+const hasCardFile = (word: string): boolean => existsSync(join(root, "frontend", "assets", "art", "cards", `${word.toLowerCase().trim().replace(/\s+/g, "-")}.png`));
+let choiceQuestions = 0;
+let partsWithChoice = 0;
 let parts = 0;
 let questions = 0;
 for (const unit of units) {
@@ -40,11 +43,26 @@ for (const unit of units) {
       const expected = Math.min(4, Math.max(1, n));
       if (expected !== part.count) fail(`${unit.id}: "${item}" has ${n} syllables but is in the ${part.count}-syllable part`);
     }
-    const quiz = buildTapQuiz(part.items);
+    const quiz = buildTapQuiz(part.items, QUIZ_QUESTIONS, hasCardFile);
     if (quiz.length !== quizSize(part.items)) fail(`${unit.id} ${part.id}: quiz has ${quiz.length} questions, quizSize says ${quizSize(part.items)}`);
+    const kinds = quiz.map((question) => question.kind);
+    if (kinds.includes("choice")) partsWithChoice += 1;
+    if (kinds.some((kind, i) => kind === "choice" && kinds[i - 1] === "choice")) fail(`${unit.id} ${part.id}: two picture questions in a row`);
+    if (kinds.length >= 3 && kinds.every((kind) => kind === kinds[0]) && quiz.some((q) => q.kind === "choice")) fail(`${unit.id} ${part.id}: one format only`);
     if (quiz.length > QUIZ_QUESTIONS) fail(`${unit.id} ${part.id}: more than ${QUIZ_QUESTIONS} questions`);
     for (const question of quiz) {
       questions += 1;
+      if (question.kind === "choice") {
+        choiceQuestions += 1;
+        const wrong = question.choices.filter((c) => c !== question.word);
+        if (question.choices.length !== 3 || new Set(question.choices).size !== 3 || wrong.length !== 2) fail(`${unit.id} ${part.id}: "${question.word}" needs 3 different choices, got ${question.choices.join("/")}`);
+        if (!hasCardFile(question.word)) fail(`${unit.id} ${part.id}: picture question for "${question.word}" has no picture`);
+        for (const c of wrong) {
+          if (syllabify(c).length !== question.syllables.length) fail(`${unit.id} ${part.id}: wrong choice "${c}" has a different number of syllables than "${question.word}"`);
+          if (c[0] === question.word[0]) fail(`${unit.id} ${part.id}: wrong choice "${c}" starts like "${question.word}"`);
+        }
+        continue;
+      }
       if (!part.items.includes(question.word)) fail(`${unit.id} ${part.id}: asks "${question.word}", which this part does not teach`);
       if (part.count < 4 && question.syllables.length !== part.count) fail(`${unit.id} ${part.id}: "${question.word}" needs ${question.syllables.length} tiles in a ${part.count}-syllable part`);
       const labels = question.tiles.map((tile) => tile.label);
@@ -60,6 +78,7 @@ for (const unit of units) {
   }
 }
 console.log(`${units.length} lessons -> ${parts} parts, ${questions} quiz questions built (random draws), all grouped by syllable count.`);
+console.log(`Picture-to-word questions: ${choiceQuestions} in this draw, ${partsWithChoice} of ${parts} parts have one.`);
 
 // Words and the English text: nothing is left as a placeholder, and praise never goes silent.
 for (const key of ["partWord"] as const) {
