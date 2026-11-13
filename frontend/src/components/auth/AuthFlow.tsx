@@ -115,15 +115,20 @@ export function Welcome({ onSignIn, onNew }: { onSignIn: () => void; onNew: () =
         <LanguageSwitch />
       </View>
       <View style={styles.hero}>
-        <HelloCapi size={250} />
-        <Text style={styles.brand}>Basa-Bata</Text>
+        <HelloCapi size={190} />
       </View>
-      <View style={styles.actions}>
-        <Text style={styles.ask}>{t("welcomeAsk")}</Text>
+      <View style={styles.askCard}>
+        <Text style={styles.askTitle}>{t("welcomeAsk")}</Text>
         <Button3D label={t("signInButton")} onPress={onSignIn} />
-        <Text style={styles.ask}>{t("newAsk")}</Text>
-        <Button3D label={t("startButton")} tone="outlineLight" labelColor={dark.green} onPress={onNew} />
+        <View style={styles.divider}>
+          <View style={styles.rule} />
+          <Text style={darkStyles.label}>{t("or")}</Text>
+          <View style={styles.rule} />
+        </View>
+        <Text style={styles.askTitle}>{t("newAsk")}</Text>
+        <Button3D label={t("startButton")} tone="infoLight" onPress={onNew} />
       </View>
+      <View style={styles.pondSpace} />
     </DarkPage>
   );
 }
@@ -287,7 +292,7 @@ export function Form({
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <DarkPage style={{ paddingTop: insets.top + 16 }}>
+      <DarkPage scene="plain" style={{ paddingTop: insets.top + 16 }}>
         <ScrollView contentContainerStyle={styles.formScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.headerRow}>
             <BackButton onPress={onBack} />
@@ -423,7 +428,7 @@ export function CodeStep({ email, purpose, onBack }: { email: string; purpose: C
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <DarkPage style={{ paddingTop: insets.top + 16 }}>
+      <DarkPage scene="plain" style={{ paddingTop: insets.top + 16 }}>
         <ScrollView contentContainerStyle={styles.formScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.headerRow}>
             <BackButton onPress={onBack} />
@@ -494,6 +499,17 @@ const styles = StyleSheet.create({
   brand: { fontFamily: font.display, fontSize: 44, lineHeight: 62, color: dark.text, includeFontPadding: false },
   actions: { gap: 14 },
   ask: { fontFamily: font.bold, fontSize: 14, letterSpacing: 1.4, color: dark.muted, textAlign: "center", textTransform: "uppercase" },
+  askCard: {
+    gap: 12,
+    padding: 18,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderBottomWidth: 6,
+    borderColor: dark.line,
+    borderRadius: 26,
+  },
+  askTitle: { fontFamily: font.display, fontSize: 26, lineHeight: 38, color: dark.text, textAlign: "center", includeFontPadding: false },
+  pondSpace: { height: 150 },
   back: { width: 44, height: 44, justifyContent: "center" },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   topRight: { alignItems: "flex-end" },
@@ -514,10 +530,10 @@ const styles = StyleSheet.create({
     borderColor: dark.line,
     borderRadius: 18,
   },
-  avatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: dark.blue, alignItems: "center", justifyContent: "center" },
-  avatarText: { fontFamily: font.display, fontSize: 24, lineHeight: 34, color: "#12303F", includeFontPadding: false },
+  avatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: dark.coral, alignItems: "center", justifyContent: "center" },
+  avatarText: { fontFamily: font.display, fontSize: 24, lineHeight: 34, color: "#FFFFFF", includeFontPadding: false },
   accountText: { flex: 1, fontFamily: font.bold, fontSize: 17, color: dark.text },
-  remove: { fontFamily: font.bold, fontSize: 13, letterSpacing: 1.2, color: dark.coral },
+  remove: { fontFamily: font.bold, fontSize: 13, letterSpacing: 1.2, color: dark.coralDark },
   formScroll: { gap: 14, paddingBottom: 20 },
   peekWrap: { alignItems: "center", marginBottom: -4 },
   field: { height: 56, paddingHorizontal: 16, borderRadius: 16, backgroundColor: dark.field, color: dark.text, fontFamily: font.body, fontSize: 18 },
@@ -525,7 +541,7 @@ const styles = StyleSheet.create({
   passRow: { justifyContent: "center" },
   passField: { paddingRight: 56 },
   eye: { position: "absolute", right: 0, width: 54, height: 56, alignItems: "center", justifyContent: "center" },
-  message: { fontFamily: font.bold, fontSize: 15, lineHeight: 21, color: dark.coral },
+  message: { fontFamily: font.bold, fontSize: 15, lineHeight: 21, color: dark.coralDark },
   spinner: { height: 60 },
   divider: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 6 },
   rule: { flex: 1, height: 2, backgroundColor: dark.line },
@@ -535,8 +551,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 2,
     borderBottomWidth: 5,
-    borderColor: dark.line,
+    borderColor: "#CDBFA4",
     borderRadius: 16,
+    backgroundColor: "#FFFFFF",
   },
   socialText: { fontFamily: font.bold, fontSize: 14, letterSpacing: 1, color: dark.text },
   terms: { fontFamily: font.body, fontSize: 13, lineHeight: 19, color: dark.muted, textAlign: "center", marginTop: 4 },

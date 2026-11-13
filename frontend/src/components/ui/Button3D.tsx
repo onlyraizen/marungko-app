@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from "rea
 import { colors, radius } from "../../theme/colors";
 import { font } from "../../theme/fonts";
 
-export type Tone = "primary" | "info" | "danger" | "accent" | "neutral" | "locked" | "outline" | "outlineDanger" | "outlineLight";
+export type Tone = "primary" | "info" | "danger" | "accent" | "neutral" | "locked" | "outline" | "outlineDanger" | "outlineLight" | "infoLight";
 
 const TONES: Record<Tone, { face: string; lip: string; text: string; outline?: boolean }> = {
   primary: { face: colors.primary, lip: colors.primaryDark, text: "#1D3B1A" },
@@ -13,8 +13,9 @@ const TONES: Record<Tone, { face: string; lip: string; text: string; outline?: b
   locked: { face: colors.locked, lip: colors.lockedDark, text: colors.lockedInk },
   outline: { face: "transparent", lip: "#2E8B45", text: colors.primaryInk, outline: true },
   outlineDanger: { face: "transparent", lip: colors.danger, text: colors.dangerDark, outline: true },
-  // For the dark account screens.
-  outlineLight: { face: "transparent", lip: "#5A3F2A", text: "#FFF3D6", outline: true },
+  // For the pond-blue account screens: a light blue button with a blue edge, and a white one.
+  outlineLight: { face: colors.white, lip: colors.infoDark, text: colors.infoInk, outline: true },
+  infoLight: { face: colors.infoBg, lip: colors.infoDark, text: colors.infoInk, outline: true },
 };
 
 type Props = {

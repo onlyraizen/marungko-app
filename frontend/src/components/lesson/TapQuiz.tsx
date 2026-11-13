@@ -18,7 +18,7 @@ import ExplainScreen from "./ExplainScreen";
 import FeedbackSheet from "./FeedbackSheet";
 import { praiseAt } from "./lessonText";
 import RoundSpeaker from "./RoundSpeaker";
-import { SpeakerWithHint, useSpeakerHint } from "./GuideHint";
+import { SpeakerWithHint } from "./GuideHint";
 
 type Props = {
   questions: readonly TapQuestion[];
@@ -50,7 +50,8 @@ export default function TapQuiz(props: Props) {
   const [flagged, setFlagged] = useState(false);
   const [praise, setPraise] = useState<Line | null>(null);
   const praiseIndex = useRef(0);
-  const hint = useSpeakerHint();
+  // The arrow and ring come back on every question and go away once the child taps a speaker for that question.
+  const [tappedAt, setTappedAt] = useState(-1);
 
   const question = questions[qi];
   const capiSize = Math.min(184, Math.round(width * 0.47));
@@ -112,12 +113,12 @@ export default function TapQuiz(props: Props) {
           <CapiActor size={capiSize} talking={guide.speaking} listening={false} pose={pose} />
           <View style={styles.right}>
             <Bubble tail="left" tailTop={50} style={styles.bubble}>
-              <SpeakerWithHint size={46} direction="up" show={hint.show && !checked}>
+              <SpeakerWithHint size={46} direction="up" show={tappedAt !== qi && !checked}>
                 <RoundSpeaker
                   size={46}
                   disabled={guide.speaking}
                   onPress={() => {
-                    hint.used();
+                    setTappedAt(qi);
                     guide.say(question.word);
                   }}
                 />
@@ -129,7 +130,7 @@ export default function TapQuiz(props: Props) {
               color={colors.infoInk}
               style={styles.slow}
               onPress={() => {
-                hint.used();
+                setTappedAt(qi);
                 guide.say(question.word, { slow: true });
               }}
             />

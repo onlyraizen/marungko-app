@@ -109,6 +109,14 @@ export const ICONS = {
 } as const;
 export type IconName = keyof typeof ICONS;
 
+/** Pond scenery for the account screens (rasterised from the design canvas, transparent PNG at 3x). */
+export const AUTH_BG = {
+  clouds: require("../../../assets/art/backgrounds/clouds.png"),
+  pond: require("../../../assets/art/backgrounds/pond.png"),
+  pondPlain: require("../../../assets/art/backgrounds/pond-plain.png"),
+  pondTall: require("../../../assets/art/backgrounds/pond-tall.png"),
+} as const;
+
 export const LOGO_FACE = require("../../../assets/art/capi/logo-face.png");
 
 export const POND = {
