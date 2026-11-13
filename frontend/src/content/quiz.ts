@@ -7,7 +7,9 @@ export type TapTile = { id: string; label: string };
 export type BuildQuestion = { kind: "build"; word: string; syllables: string[]; tiles: TapTile[]; picture: boolean };
 /** See the picture, hear the word if you like, and tap the right word out of three. */
 export type ChoiceQuestion = { kind: "choice"; word: string; syllables: string[]; choices: string[]; picture: true };
-export type QuizQuestion = BuildQuestion | ChoiceQuestion;
+/** Hear the word (no picture shown, no written word) and tap its picture out of four. */
+export type ListenQuestion = { kind: "listen"; word: string; syllables: string[]; pictures: string[]; picture: false };
+export type QuizQuestion = BuildQuestion | ChoiceQuestion | ListenQuestion;
 export type TapQuestion = BuildQuestion;
 
 const shuffle = <T,>(list: readonly T[]): T[] => {
@@ -78,13 +80,37 @@ export function distractorsFor(word: string, partWords: readonly string[]): stri
 }
 
 /**
- * The questions of a part's quiz. Two formats alternate (build, choice, build, ...):
+ * Three wrong pictures for a hear-the-word question. Every one must have a picture card, start with a different letter
+ * than the answer and not be a near-identical spelling, so the ear (not the eye) has to decide. They come from the
+ * part's own words first, then from any lesson. Returns [] when three good ones do not exist.
+ */
+export function pictureDistractorsFor(word: string, partWords: readonly string[], hasPicture: (word: string) => boolean): string[] {
+  const lower = word.toLowerCase();
+  const usable = (pool: readonly string[]) => [...new Set(pool.map((w) => w.toLowerCase()))].filter((c) => c !== lower && !c.includes(" ") && hasPicture(c));
+  const rules = [
+    (c: string) => distance(lower, c) >= 3 && c[0] !== lower[0],
+    (c: string) => distance(lower, c) >= 2 && c[0] !== lower[0],
+  ];
+  for (const rule of rules) {
+    const picked: string[] = [];
+    for (const c of [...shuffle(usable(partWords).filter(rule)), ...shuffle(usable(ALL_WORDS).filter(rule))]) {
+      // Also different from each other at the first letter, so two wrong pictures never sound alike.
+      if (!picked.includes(c) && picked.every((p) => p[0] !== c[0])) picked.push(c);
+      if (picked.length === 3) return picked;
+    }
+  }
+  return [];
+}
+
+/**
+ * The questions of a part's quiz. Three formats rotate (build, choice, listen, build, ...):
  *  - build: Capi says the item and the child taps its syllables in order. A part only holds items with the same number
  *    of syllables (see parts.ts), so a question has exactly as many tiles to place as that part teaches. The tiles are
  *    the item's own syllables plus look-alike syllables from the same lesson (then from any lesson). The picture card
  *    is shown when the word has one.
  *  - choice: the picture of the word and three written words to choose from. Only words with a picture and two good
  *    wrong answers get this format; the rest are build questions.
+ *  - listen: Capi says the word and the child taps its picture out of four (no written word anywhere). Same rule.
  * `hasPicture` says which words have a picture card (the app passes the card list; tests pass the files on disk).
  */
 export function buildTapQuiz(words: readonly string[], count = QUIZ_QUESTIONS, hasPicture: (word: string) => boolean = () => false): QuizQuestion[] {
@@ -92,26 +118,31 @@ export function buildTapQuiz(words: readonly string[], count = QUIZ_QUESTIONS, h
   const n = Math.min(count, eligible.length);
   const lessonSyllables = [...new Set(words.flatMap((word) => syllabify(word)))];
 
-  // Odd positions (2nd, 4th, ...) are choice questions when a pictured word with two good wrong answers is available.
-  const choiceCandidates = eligible.filter((word) => hasPicture(word) && distractorsFor(word, words).length === 2);
+  // The formats rotate build, choice, listen, build, ... A picture format needs a pictured word with good wrong answers;
+  // when none is left the slot is a build question.
+  const FORMATS = ["build", "choice", "listen"] as const;
   const slots: (string | null)[] = Array.from({ length: n }, () => null);
-  const isChoice: boolean[] = Array.from({ length: n }, () => false);
-  let next = 0;
-  for (let i = 1; i < n; i += 2) {
-    const word = choiceCandidates[next];
-    if (word === undefined) break;
+  const formatAt: ("build" | "choice" | "listen")[] = Array.from({ length: n }, () => "build");
+  const used = new Set<string>();
+  for (let i = 1; i < n; i += 1) {
+    const format = FORMATS[i % FORMATS.length] as "build" | "choice" | "listen";
+    if (format === "build") continue;
+    const word = eligible.find(
+      (w) => !used.has(w) && hasPicture(w) && (format === "choice" ? distractorsFor(w, words).length === 2 : pictureDistractorsFor(w, words, hasPicture).length === 3),
+    );
+    if (word === undefined) continue;
     slots[i] = word;
-    isChoice[i] = true;
-    next += 1;
+    formatAt[i] = format;
+    used.add(word);
   }
-  const used = new Set(slots.filter((w): w is string => w !== null));
   const rest = eligible.filter((word) => !used.has(word)).sort((a, b) => Number(hasPicture(b)) - Number(hasPicture(a)));
   for (let i = 0; i < n; i += 1) if (slots[i] === null) slots[i] = rest.shift() ?? null;
 
   return slots.flatMap((word, i): QuizQuestion[] => {
     if (word === null) return [];
     const syllables = syllabify(word);
-    if (isChoice[i]) return [{ kind: "choice", word, syllables, choices: shuffle([word, ...distractorsFor(word, words)]), picture: true }];
+    if (formatAt[i] === "listen") return [{ kind: "listen", word, syllables, pictures: shuffle([word, ...pictureDistractorsFor(word, words, hasPicture)]), picture: false }];
+    if (formatAt[i] === "choice") return [{ kind: "choice", word, syllables, choices: shuffle([word, ...distractorsFor(word, words)]), picture: true }];
     const own = new Set(syllables);
     const total = syllables.length === 1 ? 4 : Math.max(6, syllables.length + 3);
     const near = shuffle(lessonSyllables.filter((s) => !own.has(s) && s.length >= 2));

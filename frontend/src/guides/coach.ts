@@ -13,8 +13,9 @@ import { useAppStore } from "../store/useAppStore";
  *  mic_button           the first microphone button
  *  quiz_syllable_build  the first build-the-word quiz: the syllable tiles
  *  quiz_picture_choice  the first picture-to-word quiz: the word choices
+ *  quiz_listen_pick     the first hear-the-word quiz: the four pictures
  */
-export const GUIDE_IDS = ["lesson_intro", "speaker_button", "mic_button", "quiz_syllable_build", "quiz_picture_choice"] as const;
+export const GUIDE_IDS = ["lesson_intro", "speaker_button", "mic_button", "quiz_syllable_build", "quiz_picture_choice", "quiz_listen_pick"] as const;
 export type GuideId = (typeof GUIDE_IDS)[number];
 
 const key = (child: string | null, id: GuideId) => `${child ?? "device"}:${id}`;

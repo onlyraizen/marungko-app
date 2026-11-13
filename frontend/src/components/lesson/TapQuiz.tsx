@@ -58,7 +58,7 @@ export default function TapQuiz(props: Props) {
 
   const question = questions[qi];
   // First-time guide for this kind of question: shown once per kind, then retired (see guides/coach.ts).
-  const guideId = question?.kind === "choice" ? "quiz_picture_choice" : "quiz_syllable_build";
+  const guideId = question?.kind === "choice" ? "quiz_picture_choice" : question?.kind === "listen" ? "quiz_listen_pick" : "quiz_syllable_build";
   const coach = useCoach([guideId], props.coachVoice);
   const capiSize = Math.min(184, Math.round(width * 0.47));
 
@@ -88,9 +88,10 @@ export default function TapQuiz(props: Props) {
   if (!question) return null;
 
   const check = () => {
-    const ok = question.kind === "choice" ? picked === question.word : placedLabels.join("") === question.word;
+    const pickMode = question.kind !== "build";
+    const ok = pickMode ? picked === question.word : placedLabels.join("") === question.word;
     setChecked({ ok });
-    onAnswer(question.word, ok, question.kind === "choice" ? (picked ?? "") : placedLabels.join("-"), false);
+    onAnswer(question.word, ok, pickMode ? (picked ?? "") : placedLabels.join("-"), false);
     if (ok) {
       const line = praiseAt(praiseIndex.current, guide.has);
       praiseIndex.current += 1;
@@ -144,7 +145,41 @@ export default function TapQuiz(props: Props) {
           </View>
         </View>
 
-        {question.kind === "choice" ? (
+        {question.kind === "listen" ? (
+          <View style={[styles.grid, { marginTop: coach.current === "quiz_listen_pick" && !checked ? 108 : 16 }]}>
+            {question.pictures.map((word, i) => {
+              const on = picked === word;
+              const state = !checked ? (on ? "pick" : "normal") : word === question.word ? "right" : on ? "wrong" : "normal";
+              const cardW = Math.floor((width - 40 - 14) / 2);
+              return (
+                <GuideTarget
+                  key={word}
+                  direction="down"
+                  show={coach.current === "quiz_listen_pick" && !checked && i === 0}
+                  onDismiss={() => coach.done("quiz_listen_pick")}
+                  okLabel={t("guideOk")}
+                  width={cardW}
+                  height={cardW}
+                  arrowSize={52}
+                >
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={word}
+                    disabled={checked !== null}
+                    onPress={() => {
+                      void playSfx("tap", 0.5);
+                      coach.done("quiz_listen_pick");
+                      setPicked(word);
+                    }}
+                    style={[styles.gridCard, { width: cardW, height: cardW }, choiceStyle[state]]}
+                  >
+                    <WordPicture word={word} size={Math.min(130, cardW - 28)} />
+                  </Pressable>
+                </GuideTarget>
+              );
+            })}
+          </View>
+        ) : question.kind === "choice" ? (
           <>
         <View style={styles.choiceWrap}>
           <View style={styles.pictureCard}>
@@ -243,7 +278,7 @@ export default function TapQuiz(props: Props) {
       {!checked ? (
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 6 }]}>
           <TextLink label={t("cantListen")} onPress={skip} />
-          <Button3D label={t("check")} disabled={question.kind === "choice" ? picked === null : placed.length === 0} onPress={check} />
+          <Button3D label={t("check")} disabled={question.kind !== "build" ? picked === null : placed.length === 0} onPress={check} />
         </View>
       ) : (
         <FeedbackSheet
@@ -286,6 +321,8 @@ const styles = StyleSheet.create({
   line: { position: "absolute", left: 0, right: 0, top: 72, height: 2, backgroundColor: "#A9CFE0" },
   answerTiles: { position: "absolute", left: 0, right: 0, top: 8, flexDirection: "row", flexWrap: "wrap", columnGap: 10, rowGap: 16 },
   thumb: { width: 60, height: 60, alignItems: "center", justifyContent: "center" },
+  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 14 },
+  gridCard: { alignItems: "center", justifyContent: "center", borderWidth: 2, borderBottomWidth: 6, borderRadius: 24 },
   choiceWrap: { alignItems: "center", gap: 12, marginTop: 6 },
   pictureCard: {
     width: 160,

@@ -27,6 +27,8 @@ const units = readdirSync(join(root, "content", "units"))
 
 const hasCardFile = (word: string): boolean => existsSync(join(root, "frontend", "assets", "art", "cards", `${word.toLowerCase().trim().replace(/\s+/g, "-")}.png`));
 let choiceQuestions = 0;
+let listenQuestions = 0;
+let partsWithListen = 0;
 let partsWithChoice = 0;
 let parts = 0;
 let questions = 0;
@@ -47,11 +49,20 @@ for (const unit of units) {
     if (quiz.length !== quizSize(part.items)) fail(`${unit.id} ${part.id}: quiz has ${quiz.length} questions, quizSize says ${quizSize(part.items)}`);
     const kinds = quiz.map((question) => question.kind);
     if (kinds.includes("choice")) partsWithChoice += 1;
-    if (kinds.some((kind, i) => kind === "choice" && kinds[i - 1] === "choice")) fail(`${unit.id} ${part.id}: two picture questions in a row`);
-    if (kinds.length >= 3 && kinds.every((kind) => kind === kinds[0]) && quiz.some((q) => q.kind === "choice")) fail(`${unit.id} ${part.id}: one format only`);
+    if (kinds.includes("listen")) partsWithListen += 1;
+    if (kinds.some((kind, i) => kind !== "build" && kinds[i - 1] === kind)) fail(`${unit.id} ${part.id}: two picture questions of the same kind in a row`);
+    if (kinds.length >= 3 && kinds[0] !== "build" && kinds.every((kind) => kind === kinds[0])) fail(`${unit.id} ${part.id}: one format only`);
     if (quiz.length > QUIZ_QUESTIONS) fail(`${unit.id} ${part.id}: more than ${QUIZ_QUESTIONS} questions`);
     for (const question of quiz) {
       questions += 1;
+      if (question.kind === "listen") {
+        listenQuestions += 1;
+        const firsts = question.pictures.map((w) => w[0]);
+        if (question.pictures.length !== 4 || new Set(question.pictures).size !== 4 || !question.pictures.includes(question.word)) fail(`${unit.id} ${part.id}: "${question.word}" needs 4 different pictures including its own, got ${question.pictures.join("/")}`);
+        if (new Set(firsts).size !== 4) fail(`${unit.id} ${part.id}: pictures for "${question.word}" share a first letter: ${question.pictures.join("/")}`);
+        for (const w of question.pictures) if (!hasCardFile(w)) fail(`${unit.id} ${part.id}: listen picture "${w}" has no picture`);
+        continue;
+      }
       if (question.kind === "choice") {
         choiceQuestions += 1;
         const wrong = question.choices.filter((c) => c !== question.word);
@@ -79,6 +90,7 @@ for (const unit of units) {
 }
 console.log(`${units.length} lessons -> ${parts} parts, ${questions} quiz questions built (random draws), all grouped by syllable count.`);
 console.log(`Picture-to-word questions: ${choiceQuestions} in this draw, ${partsWithChoice} of ${parts} parts have one.`);
+console.log(`Hear-and-pick-the-picture questions: ${listenQuestions} in this draw, ${partsWithListen} of ${parts} parts have one.`);
 
 // Words and the English text: nothing is left as a placeholder, and praise never goes silent.
 for (const key of ["partWord"] as const) {
