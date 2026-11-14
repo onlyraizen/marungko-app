@@ -237,7 +237,9 @@ export default function LessonScreen({ title, items, words, baseYuzu, review = f
           : reason === "too-long"
             ? [FEEDBACK.short, ...(target !== undefined ? [target] : [])]
             : [result.kind === "almost" ? FEEDBACK.almost : FEEDBACK.again];
-    if (misses === 2 && target !== undefined && reason !== "too-long") lines.push(target);
+    // A word that is one letter off (usually a swapped vowel: "male" for "mali") is always followed by the model word,
+    // so the child hears the right sound straight away. From the second miss it is also said after every other miss.
+    if (target !== undefined && reason !== "too-long" && (misses === 2 || reason === "near") && misses < 3) lines.push(target);
     const timer = setTimeout(() => guide.sayAll(lines), 520);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps

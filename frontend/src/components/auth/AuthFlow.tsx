@@ -22,6 +22,7 @@ import { Capi } from "../art/Capi";
 import Button3D from "../ui/Button3D";
 import { BackIcon, EyeIcon } from "../ui/Icons";
 import TextLink from "../ui/TextLink";
+import { signInWithGoogle } from "../../services/googleAuth";
 import { CodeBoxes, CodeKeypad } from "./CodeKeypad";
 import { dark, darkStyles, DarkPage, HelloCapi } from "./dark";
 
@@ -291,6 +292,20 @@ export function Form({
   };
 
   const soon = () => Alert.alert(t("soonTitle"), t("soonBody"));
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const google = async () => {
+    if (googleBusy) return;
+    setGoogleBusy(true);
+    try {
+      const result = await signInWithGoogle();
+      // Cancelling is not an error: the person simply came back. The signed-in session is picked up by the app.
+      if (!result.ok && !result.cancelled) Alert.alert(t("googleFailedTitle"), t("googleFailedBody"));
+    } catch {
+      Alert.alert(t("googleFailedTitle"), t("googleFailedBody"));
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -346,7 +361,7 @@ export function Form({
             <View style={styles.rule} />
           </View>
           {["Google", "Facebook", "Apple"].map((name) => (
-            <Pressable key={name} onPress={soon} accessibilityRole="button" style={styles.social}>
+            <Pressable key={name} onPress={name === "Google" ? google : soon} disabled={googleBusy} accessibilityRole="button" style={styles.social}>
               <Text style={styles.socialText}>{t("socialButton", { name: name.toUpperCase() })}</Text>
             </Pressable>
           ))}

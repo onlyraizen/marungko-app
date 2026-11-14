@@ -122,6 +122,8 @@ const S = {
   part3Body: { fil: "Ngayon, mga salitang may tatlong pantig.", en: "Now, words with three syllables." },
   part4Body: { fil: "Ngayon, mga mahahabang salita.", en: "Now, longer words." },
   partGo: { fil: "Tara!", en: "Let's go!" },
+  googleFailedTitle: { fil: "Hindi natuloy ang Google", en: "Google sign-in did not finish" },
+  googleFailedBody: { fil: "Subukan ulit, o gamitin ang email at password. Kung may problema pa rin, tingnan ang koneksyon sa internet.", en: "Try again, or use email and password. If it keeps failing, check the internet connection." },
   parentOnly: { fil: "Para sa magulang lang", en: "For parents only" },
   parentHold: { fil: "Pindutin nang matagal ang butones sa loob ng 3 segundo para magpatuloy.", en: "Press and hold the button for 3 seconds to continue." },
   parentBack: { fil: "BUMALIK", en: "GO BACK" },

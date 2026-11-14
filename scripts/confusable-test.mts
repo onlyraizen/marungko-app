@@ -63,6 +63,25 @@ if (show !== undefined) {
   process.exit(0);
 }
 
+// Named cases from the pilot report (2026-11-14): a vowel said the everyday way must not pass in a lesson.
+// "almost" is allowed (a gentle retry with the model word replayed); "correct" is not. The right word must pass.
+const MUST_FAIL: Array<[string, string]> = [
+  ["mali", "ma-le"], ["mali", "male"], ["mali", "mele"], ["mali", "mile"],
+  ["bola", "bu-la"], ["bola", "bula"], ["bola", "bule"],
+  ["yelo", "yi-lu"], ["yelo", "yilo"], ["yelo", "yelu"], ["yelo", "yilu"],
+  ["mais", "maes"], ["mais", "mes"], ["mais", "ma-es"], ["mais", "mays"],
+  ["kanin", "kanina"], ["kanin", "kani"],
+];
+const MUST_PASS: Array<[string, string]> = [["mali", "mali"], ["bola", "bola"], ["yelo", "yelo"], ["mais", "ma-is"], ["mais", "mais"], ["kanin", "ka-nin"]];
+const named: string[] = [];
+for (const [target, said] of MUST_FAIL) if (verdict(said, target) === "correct") named.push(`"${said}" passes as "${target}"`);
+for (const [target, said] of MUST_PASS) if (verdict(said, target) !== "correct") named.push(`"${said}" is rejected for "${target}"`);
+if (named.length > 0) {
+  console.log(`NAMED CASES FAILED (${named.length}):\n  ${named.join("\n  ")}`);
+  process.exit(1);
+}
+console.log(`Named cases: ${MUST_FAIL.length} wrong spellings rejected, ${MUST_PASS.length} right ones accepted.`);
+
 let checked = 0;
 const leaks: string[] = [];
 for (const target of all) {
