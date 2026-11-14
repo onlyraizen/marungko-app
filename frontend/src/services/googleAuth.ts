@@ -38,6 +38,12 @@ export async function signInWithGoogle(): Promise<GoogleResult> {
     },
   });
   if (error || !data.url) return { ok: false, cancelled: false, message: error?.message };
+  if (__DEV__) {
+    // Development only. Shows which redirect Supabase was asked for and which parameters it got. The values of
+    // everything else (code challenge, state) are NOT printed.
+    const sent = new URL(data.url).searchParams;
+    console.log("[google] redirect_to sent:", sent.get("redirect_to"), "| parameters:", [...sent.keys()].join(","));
+  }
 
   const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
   if (result.type !== "success") return { ok: false, cancelled: true };
