@@ -1,0 +1,22 @@
+<!-- Supabase email template: Confirm sign up.
+     1. Upload basa-bata-banner.png to a PUBLIC Supabase Storage bucket and put its public URL in place of BANNER_URL.
+     2. Paste this whole file in Authentication > Emails > Confirm sign up > Source. Keep {{ .Token }} exactly as written.
+     No secrets here: the banner URL is public by design. -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#D9F0FA;padding:24px 0;font-family:Arial,Helvetica,sans-serif;">
+  <tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#FFFFFF;border-radius:16px;overflow:hidden;">
+      <tr><td><img src="BANNER_URL" alt="Basa-Bata" width="520" style="display:block;width:100%;height:auto;border:0;"></td></tr>
+      <tr><td style="padding:28px 28px 8px 28px;color:#3A2210;font-size:18px;line-height:1.5;">
+        <p style="margin:0 0 8px 0;"><b>Ilagay ang code na ito sa app para kumpirmahin ang email mo.</b></p>
+        <p style="margin:0;">Enter this code in the app to confirm your email.</p>
+      </td></tr>
+      <tr><td align="center" style="padding:12px 28px 20px 28px;">
+        <div style="display:inline-block;background:#F2FBEF;border:2px solid #6BD16E;border-radius:14px;padding:14px 22px;color:#3A2210;font-size:32px;font-weight:bold;letter-spacing:6px;">{{ .Token }}</div>
+      </td></tr>
+      <tr><td style="padding:0 28px 28px 28px;color:#6B5A47;font-size:14px;line-height:1.5;">
+        <p style="margin:0 0 6px 0;">Valid for 1 hour. Hindi mo ba hiniling ito? Huwag pansinin ang email na ito.</p>
+        <p style="margin:0;">Didn't ask for this? You can ignore this email.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
