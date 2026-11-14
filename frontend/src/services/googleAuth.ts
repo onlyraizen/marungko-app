@@ -26,6 +26,8 @@ function paramsOf(url: string): URLSearchParams {
 
 export async function signInWithGoogle(): Promise<GoogleResult> {
   const redirectTo = Linking.createURL("auth-callback");
+  // Development only: shows the exact address Supabase must allow (no token or code in it). Not in release builds.
+  if (__DEV__) console.log("[google] redirect address:", redirectTo);
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
