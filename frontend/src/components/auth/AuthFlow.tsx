@@ -31,11 +31,20 @@ type Mode = "signIn" | "signUp";
 /** What the emailed code is for: confirming a new account, or setting a new password. */
 type CodeFor = "signup" | "recovery";
 
+/**
+ * How many digits the email code has. Supabase decides (Authentication > Sign In / Providers > Email; this project
+ * sends 8). If you change it there, set EXPO_PUBLIC_OTP_LENGTH to the same number and restart with `-c`.
+ */
+const CODE_LENGTH = ((): number => {
+  const value = Number(process.env.EXPO_PUBLIC_OTP_LENGTH ?? "8");
+  return Number.isInteger(value) && value >= 4 && value <= 10 ? value : 8;
+})();
+
 /** Seconds before another code may be asked for. Supabase allows one per 60 s per person, so ask no sooner. */
 const RESEND_SECONDS = 60;
 
 /**
- * Everything before the app: welcome, meeting Capi, saved accounts, the email + password form, and the 6-digit code.
+ * Everything before the app: welcome, meeting Capi, saved accounts, the email + password form, and the email code.
  * The home screen reacts to the new session, so nothing here has to navigate when sign-in works.
  *
  * Why a code and not a link: the confirmation link of a hosted Supabase project opens a web page whose address carries
@@ -373,7 +382,7 @@ export function Form({
 }
 
 /**
- * "Tingnan ang iyong email": the 6-digit code from the email. For a new account it confirms the email; for a forgotten
+ * "Tingnan ang iyong email": the code from the email. For a new account it confirms the email; for a forgotten
  * password it also takes the new password, so the person is signed in with it straight away.
  */
 export function CodeStep({ email, purpose, onBack }: { email: string; purpose: CodeFor; onBack: () => void }) {
@@ -404,7 +413,7 @@ export function CodeStep({ email, purpose, onBack }: { email: string; purpose: C
     const base = wrong ? "" : digits;
     setWrong(false);
     setMessage(null);
-    if (base.length < 6) setDigits(base + digit);
+    if (base.length < CODE_LENGTH) setDigits(base + digit);
     else setDigits(base);
   };
   const erase = () => {
@@ -414,8 +423,8 @@ export function CodeStep({ email, purpose, onBack }: { email: string; purpose: C
   };
 
   const confirm = async () => {
-    if (digits.length < 6) {
-      setMessage(t("codeBadLength"));
+    if (digits.length < CODE_LENGTH) {
+      setMessage(t("codeBadLength", { n: CODE_LENGTH }));
       return;
     }
     if (recovery && phase === "code") {
@@ -513,11 +522,11 @@ export function CodeStep({ email, purpose, onBack }: { email: string; purpose: C
       <View style={styles.codeBody}>
         {capiSize >= 80 ? <Capi pose={wrong ? "tryAgain" : "sign"} size={capiSize} /> : null}
         <Text style={darkStyles.title}>{recovery ? t("resetTitle") : t("codeTitle")}</Text>
-        <Text style={[darkStyles.body, { textAlign: "center" }]}>{t("codeSent", { email })}</Text>
-        <CodeBoxes digits={digits} wrong={wrong} />
+        <Text style={[darkStyles.body, { textAlign: "center" }]}>{t("codeSent", { email, n: CODE_LENGTH })}</Text>
+        <CodeBoxes digits={digits} length={CODE_LENGTH} wrong={wrong} />
         {message ? <Text style={[styles.message, { textAlign: "center" }]}>{message}</Text> : null}
         <TextLink label={resendText} color={wait > 0 ? dark.muted : dark.blue} onPress={resend} />
-        {busy ? <ActivityIndicator color={dark.green} style={styles.spinner} /> : <Button3D label={recovery ? t("continueButton") : t("codeButton")} disabled={digits.length < 6} onPress={confirm} style={{ alignSelf: "stretch" }} />}
+        {busy ? <ActivityIndicator color={dark.green} style={styles.spinner} /> : <Button3D label={recovery ? t("continueButton") : t("codeButton")} disabled={digits.length < CODE_LENGTH} onPress={confirm} style={{ alignSelf: "stretch" }} />}
       </View>
       <CodeKeypad onDigit={press} onBack={erase} disabled={busy} />
     </DarkPage>

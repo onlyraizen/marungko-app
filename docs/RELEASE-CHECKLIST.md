@@ -32,7 +32,7 @@ Decision: the app uses **browser sign-in** (Supabase `signInWithOAuth` + `expo-w
 - [ ] **B5 Parent only:** child never signs in with Google (Google minimum age 13). Pass: the Google button is on the adult sign-in screen only.
 
 ## C. OTP email
-- [ ] **C1 Confirm sign up and Reset password templates use `{{ .Token }}`.** Owner R. Pass: a new sign-up email shows 6 digits and no link.
+- [ ] **C1 Confirm sign up and Reset password templates use `{{ .Token }}`.** Owner R. Pass: a new sign-up email shows the 8-digit code and no link.
 - [ ] **C2 Custom SMTP = Gmail + App Password** (decided in v3; sender name Basa-Bata; Brevo is the backup, Resend/Brevo need a domain). Owner R. Pass: email reaches a Gmail inbox (not spam) within a minute, from an address that is not a Supabase team member.
 - [ ] **C3 Code flow tests:** new sign-up, resend (after 60 s), wrong code (coral boxes), expired, used code, view on a phone. Owner K. Pass: each shows a kind message; the right code signs in.
 - [ ] **C4 Supabase email rate limit** raised from the 30/hour default if more testers than that. Owner R.

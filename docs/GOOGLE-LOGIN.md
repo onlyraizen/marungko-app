@@ -58,7 +58,7 @@ Do now (dashboard only; the code cannot do it):
 1. Authentication > Emails (or Email Templates) > **Confirm sign up**: replace the link with `{{ .Token }}`, and do the same in **Reset password**. Example body: `<h2>Basa-Bata</h2><p>Ang code mo:</p><p style="font-size:28px;letter-spacing:6px"><b>{{ .Token }}</b></p><p>Valid for 1 hour.</p>`.
 2. Authentication > Emails > SMTP Settings: click **Set up SMTP** (Supabase locks the template editor until custom SMTP is on; its built-in sender only reaches the project's own team members, at 2 per hour, so it does not suffice for testers). **Chosen route (agreed in Basa-Bata v3): Gmail SMTP with an App Password**, because Resend and Brevo want a domain and we have none. Host `smtp.gmail.com`, port 465 (or 587), username = the full Gmail address, password = the Google App Password (needs 2-Step Verification), sender email = the same Gmail, sender name "Basa-Bata". The App Password lives only in the Supabase dashboard. Gmail's current limits and the form fields were not re-checked today (a third-party source says 500/day for personal accounts: unverified). Prefer a dedicated project Gmail over a personal one. Brevo is the backup: it has a 300/day free plan, but its own help pages say free-mail senders (@gmail.com) are rejected, spam-filtered or have the sender swapped, and a third-party source mentions an approval wait (unverified).
 3. Sender trust: only if you later get a domain and use Resend, verify it (SPF and DKIM records the provider shows); add a DMARC record later. Without a domain, mail from a free address lands in spam: unverified, test it.
-4. Code: 6 digits; expires in 1 hour by default (Authentication > Emails > Email OTP expiration; Supabase says over one day is discouraged); one request per 60 s per user (the app counts down 60 s).
+4. Code: 8 digits in this project (Supabase setting; the app reads EXPO_PUBLIC_OTP_LENGTH, default 8); expires in 1 hour by default (Authentication > Emails > Email OTP expiration; Supabase says over one day is discouraged); one request per 60 s per user (the app counts down 60 s).
 Tests: new sign-up → code arrives → type on the keypad → signed in; resend after 60 s; wrong code (coral boxes, "Mali ang code"); expired code; used code; open the email on the phone (dark mode and light mode).
 
 ## 5. "mais" and "kanin"
@@ -79,7 +79,7 @@ Pilot to measure false rejects: with parental consent, 3 to 5 children say 20 wo
 |---|---|---|
 | Google login | Expo Go and APK: sign in, kill app, reopen | Still signed in; session in secure store |
 | Token refresh | Leave the app 70 minutes, open a lesson | Mic check works with no re-login |
-| Email code | New sign-up with a real Gmail | Email shows 6 digits, no link, within a minute; keypad accepts it |
+| Email code | New sign-up with a real Gmail | Email shows the 8-digit code, no link, within a minute; keypad accepts it |
 | mais / kanin | Native speaker with the rating sheet | Stress and ending confirmed |
 | Wrong vowels | Say "male", "bula", "yilo" to mali, bola, yelo | Not Tama; "Halos na!" plus the model word |
 | Right answers | Say "mali", "bola", "yelo" | Tama |

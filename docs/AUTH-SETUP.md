@@ -8,7 +8,7 @@ Why this exists: the validation found that the confirmation email sent the user 
 2. The default sign-in flow is *implicit*, which puts `access_token` and `refresh_token` in the
    URL fragment after the redirect.
 
-The app now avoids both: the email carries a **6-digit code** and the child's parent types it
+The app now avoids both: the email carries a **numeric code** (8 digits in this project; the length is a Supabase setting, mirrored by EXPO_PUBLIC_OTP_LENGTH) and the child's parent types it
 into the app. No link, no redirect, no token in any URL.
 
 ## What the code already does
@@ -45,7 +45,7 @@ Without step 1 the email still contains the old link, because the template lives
 
 ## Re-test (for the thesis evidence)
 
-1. Sign up with a fresh email → the email must show a 6-digit code and no link.
+1. Sign up with a fresh email → the email must show the numeric code (8 digits) and no link.
 2. Type the code in the app → account is confirmed and signed in.
 3. Wrong code → friendly message, no red X, can resend.
 4. "Forgot password" → code → new password → can log in.
