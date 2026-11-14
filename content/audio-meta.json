@@ -63,13 +63,13 @@
     "compiledAt": "2026-10-16T04:13:15.263Z"
   },
   "mais": {
-    "text": "mais",
+    "text": "maís",
     "voice": "Maya",
     "model": "tts-rt-v2",
     "language": "tl",
-    "variant": "2-period",
-    "gainDb": 0.6,
-    "compiledAt": "2026-10-16T04:13:15.267Z"
+    "variant": "sample E",
+    "speed": 0.85,
+    "pickedAt": "2026-11-14T01:29:22.052Z"
   },
   "aso": {
     "text": "aso",
@@ -549,13 +549,13 @@
     "compiledAt": "2026-10-16T04:13:15.382Z"
   },
   "kanin": {
-    "text": "kanin",
+    "text": "ka... nin",
     "voice": "Maya",
     "model": "tts-rt-v2",
     "language": "tl",
-    "variant": "2-period",
-    "gainDb": -0.6,
-    "compiledAt": "2026-10-16T04:13:15.384Z"
+    "variant": "sample D",
+    "speed": 1,
+    "pickedAt": "2026-11-14T01:29:22.063Z"
   },
   "tinapay": {
     "text": "tinapay",
