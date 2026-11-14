@@ -94,6 +94,11 @@ for (const key of keys.sort()) {
     console.warn(`skipped  ${key}.wav (not 16-bit mono PCM)`);
     continue;
   }
+  if (Math.abs(result.gainDb) < 0.05) {
+    console.log(`${key.padEnd(6)} already at the target level: left as it is`);
+    done += 1;
+    continue;
+  }
   writeFileSync(path, result.out);
   done += 1;
   console.log(`${key.padEnd(6)} ${result.gainDb >= 0 ? "+" : ""}${result.gainDb.toFixed(1)} dB`);

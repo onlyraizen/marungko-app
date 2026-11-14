@@ -75,3 +75,56 @@ export function shortenInnerGaps(input: Buffer, keepMs: number, thresholdDb = -4
   header.writeUInt32LE(header.length - 8 + data.length, 4);
   return { out: Buffer.concat([header, data]), cutMs: cutFrames * 5 };
 }
+
+/**
+ * Trims the silence at the START and END of a 16-bit mono PCM WAV down to at most `maxLeadMs` / `maxTrailMs`.
+ * Quiet = every sample in a 5 ms frame is below `thresholdDb` (default -40 dBFS). Sound is never cut.
+ * Returns null when the file is not 16-bit mono PCM or the ends are already short enough.
+ */
+export function trimEnds(input: Buffer, maxLeadMs: number, maxTrailMs: number, thresholdDb = -40): { out: Buffer; leadCutMs: number; trailCutMs: number } | null {
+  if (input.length < 44 || input.toString("ascii", 0, 4) !== "RIFF" || input.toString("ascii", 8, 12) !== "WAVE") return null;
+  let offset = 12;
+  let rate = 0;
+  let ok = false;
+  let dataStart = -1;
+  let dataLength = 0;
+  while (offset + 8 <= input.length) {
+    const id = input.toString("ascii", offset, offset + 4);
+    const size = input.readUInt32LE(offset + 4);
+    const body = offset + 8;
+    if (id === "fmt ") {
+      ok = input.readUInt16LE(body) === 1 && input.readUInt16LE(body + 2) === 1 && input.readUInt16LE(body + 14) === 16;
+      rate = input.readUInt32LE(body + 4);
+    } else if (id === "data") {
+      dataStart = body;
+      dataLength = Math.min(size, input.length - body);
+      break;
+    }
+    offset = body + size + (size % 2);
+  }
+  if (!ok || dataStart < 0 || rate === 0) return null;
+  const total = Math.floor(dataLength / 2);
+  const limit = 32768 * 10 ** (thresholdDb / 20);
+  const frame = Math.max(1, Math.round((rate * 5) / 1000));
+  let firstSound = -1;
+  let lastSound = -1;
+  for (let start = 0; start < total; start += frame) {
+    let peak = 0;
+    for (let i = start; i < Math.min(total, start + frame); i += 1) peak = Math.max(peak, Math.abs(input.readInt16LE(dataStart + i * 2)));
+    if (peak >= limit) {
+      if (firstSound < 0) firstSound = start;
+      lastSound = Math.min(total, start + frame);
+    }
+  }
+  if (firstSound < 0) return null;
+  const leadKeep = Math.round((rate * maxLeadMs) / 1000);
+  const trailKeep = Math.round((rate * maxTrailMs) / 1000);
+  const from = Math.max(0, firstSound - leadKeep);
+  const to = Math.min(total, lastSound + trailKeep);
+  if (from === 0 && to === total) return null;
+  const data = input.subarray(dataStart + from * 2, dataStart + to * 2);
+  const header = Buffer.from(input.subarray(0, dataStart));
+  header.writeUInt32LE(data.length, dataStart - 4);
+  header.writeUInt32LE(header.length - 8 + data.length, 4);
+  return { out: Buffer.concat([header, data]), leadCutMs: Math.round((from * 1000) / rate), trailCutMs: Math.round(((total - to) * 1000) / rate) };
+}

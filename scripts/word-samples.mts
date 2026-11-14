@@ -2,7 +2,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { audioKey } from "../packages/shared/dist/index.js";
-import { shortenInnerGaps } from "./lib/shorten-gap.mts";
+import { shortenInnerGaps, trimEnds } from "./lib/shorten-gap.mts";
 
 /**
  * Listening samples for the two words that failed before: "mais" (should be ma-ÍS, a clear /i/) and "kanin"
@@ -13,7 +13,7 @@ import { shortenInnerGaps } from "./lib/shorten-gap.mts";
  *   pnpm content:word-samples -- --yes            makes ~/word-samples/mais_A.wav ... kanin_F.wav and index.html
  *   pnpm content:word-samples -- --apply mais=C,kanin=E     copies the chosen versions into the app
  *   pnpm content:word-samples -- --apply kanin=D --gap-ms 60   same, and shortens any pause inside the word to 60 ms
- *   then: pnpm content:normalize-audio   (same loudness as every other clip; trims the silence)
+ *   then: pnpm content:normalize-audio -- mais,kanin   (same loudness as the other clips; it does NOT trim: apply already trims to 50 ms / 100 ms)
  *
  * Add --voice Maya (default) or --out-dir <folder>. How Soniox reads each respelling is NOT verified: that is
  * exactly what the listening is for. Recording a real voice (docs/syllable-recorder.html) is still preferred.
@@ -69,6 +69,12 @@ if (apply !== undefined) {
     } else {
       copyFileSync(file, target);
       if (gapMs > 0) console.log(`  no pause longer than ${gapMs} ms found in ${word}: copied as it is.`);
+    }
+    // Ends: at most 50 ms of silence before the word and 100 ms after it (normalize-audio only sets the loudness).
+    const trimmed = trimEnds(readFileSync(target), 50, 100);
+    if (trimmed) {
+      writeFileSync(target, trimmed.out);
+      console.log(`  trimmed ${trimmed.leadCutMs} ms at the start and ${trimmed.trailCutMs} ms at the end of ${word}.`);
     }
     meta[audioKey(word)] = { text: variant.text, voice, model: "tts-rt-v2", language: "tl", variant: `sample ${id.toUpperCase()}`, speed: variant.speed ?? 1, pickedAt: new Date().toISOString() };
     console.log(`Replaced ${word}.wav with version ${id.toUpperCase()} (${variant.text}).`);

@@ -19,7 +19,7 @@ Cut order if late: iOS preview, then Low-priority word fixes.
 - [ ] **A1 so, tu applied** (done today). Test: lesson 1 plays "so" and "tu". Pass: pure /o/ and /u/, no glide (NS). Owner NS.
 - [ ] **A2 mais and kanin samples made.** Test: `pnpm content:word-samples -- --yes`, open `~/word-samples/index.html`. Pass: 12 files play. Owner R.
 - [ ] **A3 NS rates them.** Pass: a version with Stress and Vowel clarity both 4+ (below 4 on either = reject); no version passes: record a real voice (`docs/syllable-recorder.html`, `pnpm content:import-voice`). Owner NS.
-- [ ] **A4 chosen versions pushed.** Test: `pnpm content:word-samples -- --apply mais=<letter>,kanin=<letter>`, `pnpm content:normalize-audio`, `pnpm content:audio -- --manifest-only`, restart with `-c`. Pass: the app plays the chosen file; `content/audio-meta.json` says voice Maya. Owner R.
+- [ ] **A4 chosen versions pushed.** Test: `pnpm content:word-samples -- --apply mais=<letter>,kanin=<letter>`, `pnpm content:normalize-audio -- mais,kanin`, restart with `-c` (apply trims the ends to 50 ms and 100 ms; normalize-audio only sets loudness; no manifest step needed because the files already exist). Pass: the app plays the chosen file; `content/audio-meta.json` says voice Maya. Owner R.
 - [ ] **A5 Stress of the other High words** (`docs/AT-RISK-WORDS.md`) marked by the NS. Pass: filled column. Owner NS.
 Recording script for a human voice (if used): say each word alone, slowly, once, quiet room, 20 cm from the mic. "mais": ma-ÍS, a clear /i/ in the last syllable, no "e", two syllables. "kanin": KA-nin, a long stressed "kaa", the last "nin" fully sounded and held a moment. Silence at the start 50 ms or less, at the end 100 ms or less (normalizer trims). Do not say an example sentence.
 
