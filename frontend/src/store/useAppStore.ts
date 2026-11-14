@@ -39,6 +39,9 @@ type AppState = {
   /** The one-tap microphone tutorial has been shown once. */
   seenMicTutorial: boolean;
   setSeenMicTutorial: (value: boolean) => void;
+  /** Parent/teacher consent to child profiles (RA 10173): account id -> ISO time it was given. Kept on this phone. */
+  consent: Record<string, string>;
+  setConsent: (userId: string, at: string) => void;
   /** Emails that have signed in on this phone, for the "Maligayang pagbabalik" list. Never passwords. */
   savedAccounts: string[];
   rememberAccount: (email: string) => void;
@@ -83,6 +86,8 @@ export const useAppStore = create<AppState>()(
       resetGuides: () => set({ seenGuides: {} }),
       seenMicTutorial: false,
       setSeenMicTutorial: (value) => set({ seenMicTutorial: value }),
+      consent: {},
+      setConsent: (userId, at) => set((state) => ({ consent: { ...state.consent, [userId]: at } })),
       savedAccounts: [],
       rememberAccount: (email) =>
         set((state) => (state.savedAccounts.includes(email) ? state : { savedAccounts: [email, ...state.savedAccounts].slice(0, 5) })),

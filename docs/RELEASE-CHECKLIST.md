@@ -67,8 +67,8 @@ Demo order: sign in with the email code, a lesson with narrator audio, speech ch
 
 ## G. Privacy and consent (RA 10173)
 - [ ] **G1 Parent or teacher creates the account;** children are profiles with a nickname. Pass: sign-up screen is for adults.
-- [ ] **G2 A parental consent screen exists** before the first child profile: what is kept (nickname, progress), that voice is checked and **not recorded or stored**, how to delete. **Not built yet:** needs a design (see questions). Owner R + K.
-- [ ] **G3 Confirm no recordings are stored:** grep the backend for storage of audio. Owner C.
+- [ ] **G2 Parental consent screen** (built 2026-11-14, text-only, Filipino + English): shown on the "Sino ang mag-aaral?" screen until the parent/teacher ticks the box and taps "Sumasang-ayon ako"; a learner cannot be added before that. It says what is kept (nickname, avatar, progress), that the voice is **not saved by Basa-Bata** and is sent live to Soniox, and mentions the RA 10173 rights. Test: new account, open the child screen, the form is hidden; tick and agree, the form appears; sign out and in again, still agreed. Pass: all three. Limits: the agreement is stored on the phone only (not in Supabase); there is no delete-child button yet (the text says to ask for deletion; no contact address exists yet); the wording needs a read by your adviser/data-privacy officer, it is not legal advice. Owner R + K.
+- [x] **G3 No voice recordings stored (checked in code 2026-11-14):** the app streams the microphone live to Soniox over a WebSocket (`useLiveTranscription.ts`) and writes no audio file; the backend upload route (`/speech/transcribe`) is not called by the app, and it deletes the Soniox file and job afterwards. **Unverified:** what Soniox itself keeps (its privacy page could not be opened from here): read https://soniox.com/docs/security-and-privacy yourself before you promise anything about the provider.
 
 ## H. Sign-off
 | Check | Who | Date | Result |

@@ -39,9 +39,7 @@ Without step 1 the email still contains the old link, because the template lives
 2. **Authentication → URL Configuration**
    - Set **Site URL** to something that is not localhost (your Railway URL or the app scheme).
    - Remove every `localhost` entry from **Redirect URLs**.
-3. **Authentication → Emails → SMTP Settings**: set up a custom SMTP provider (e.g. Resend,
-   Brevo, Gmail app password). The built-in sender is limited to **2 emails per hour for the
-   whole project**, which will break a live demo with several testers.
+3. **Authentication → Emails → SMTP Settings** (click **Set up SMTP**; the template editor stays locked until custom SMTP is on): use **Gmail SMTP with an App Password** (decided in Basa-Bata v3; Resend and Brevo need a domain, which we do not have; Brevo is the backup). Host `smtp.gmail.com`, port 465 or 587, username = the Gmail address, password = the App Password (needs 2-Step Verification), sender name `Basa-Bata`. The App Password goes only in the Supabase dashboard. The built-in sender is limited to **2 emails per hour for the whole project** and to team members, which will break a live demo with several testers. See `docs/GOOGLE-LOGIN.md` section 4.
 4. **Authentication → Providers → Email**: keep "Confirm email" ON; OTP expiry defaults to 1 hour
    (can be lowered, e.g. 15 minutes).
 

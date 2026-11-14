@@ -68,6 +68,8 @@ export default function HomeScreen() {
   const medalsByChild = useAppStore((state) => state.medals);
   const addMedals = useAppStore((state) => state.addMedals);
   const streakNotice = useAppStore((state) => state.streakNotice);
+  const consent = useAppStore((state) => state.consent);
+  const setConsent = useAppStore((state) => state.setConsent);
   const setStreakNotice = useAppStore((state) => state.setStreakNotice);
 
   const [kids, setKids] = useState<Child[] | null>(null);
@@ -370,6 +372,10 @@ export default function HomeScreen() {
         onSelect={(child) => play("pond", () => setActiveChildId(child.id))}
         onCreate={handleCreateChild}
         onSignOut={signOut}
+        consented={userId !== undefined && consent[userId] !== undefined}
+        onConsent={() => {
+          if (userId) setConsent(userId, new Date().toISOString());
+        }}
       />
     );
   }
