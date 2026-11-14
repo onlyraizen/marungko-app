@@ -89,3 +89,17 @@ Pilot to measure false rejects: with parental consent, 3 to 5 children say 20 wo
 - 100-test-user cap and 7-day refresh expiry in Testing mode (Google), and the 7-day project pause (Supabase) can break a pilot week.
 - Brevo SMTP on the free plan and Resend sending without a domain: unverified.
 - I cannot hear audio or reach Supabase, Google or Soniox from here.
+
+## 9. Finding of 2026-11-14: Redirect URLs did not match, Site URL did
+In Expo Go the app asked for `exp://192.168.1.162:8081/--/auth-callback` (confirmed in the dev log), and that address
+(and `exp://**`) was in Authentication > URL Configuration > Redirect URLs. Supabase still sent the browser to the
+Site URL (`https://marungko-app-production.up.railway.app/?code=...`, "Route not found"). Setting the **Site URL** itself
+to the app address made the sign-in return to the app. **Cause of the allow-list miss: not found** (the docs say it
+should match; unverified why it did not).
+Working rule until that is understood:
+- Expo Go test: Site URL = `exp://<laptop-ip>:8081/--/auth-callback` (the log line `[google] redirect address:` shows it).
+- Installed APK: Site URL = `marungko://auth-callback`. Test this on the Android phone; if the Redirect URLs list does
+  match there, the Site URL can go back to the Railway address.
+- Nothing else uses the Site URL (the email templates use the typed code, not a link).
+Next step if it keeps biting: send the browser to an https address on the Railway host that then opens the app (the
+hostname of the Site URL is always allowed). Not built.
