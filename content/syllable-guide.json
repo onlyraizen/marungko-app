@@ -1,0 +1,412 @@
+[
+ {
+  "syllable": "ma",
+  "book": 1,
+  "ipa": "/ma/",
+  "reported": true,
+  "stop": false,
+  "english": "",
+  "note": "lips closed, steady hum straight into the vowel. Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "sa",
+  "book": 1,
+  "ipa": "/sa/",
+  "reported": false,
+  "stop": false,
+  "english": "",
+  "note": "clean \"s\", no \"sh\", no voicing. Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "mi",
+  "book": 1,
+  "ipa": "/mi/",
+  "reported": false,
+  "stop": false,
+  "english": "English \"mee\"",
+  "note": "lips closed, steady hum straight into the vowel. Vowel: short, pure \"ee\"; no glide, not a long English \"see\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "si",
+  "book": 1,
+  "ipa": "/si/",
+  "reported": true,
+  "stop": false,
+  "english": "English \"see\"",
+  "note": "clean \"s\", no \"sh\", no voicing. Vowel: short, pure \"ee\"; no glide, not a long English \"see\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "mo",
+  "book": 1,
+  "ipa": "/mo/",
+  "reported": false,
+  "stop": false,
+  "english": "English \"moh-w\" (glide)",
+  "note": "lips closed, steady hum straight into the vowel. Vowel: pure round \"o\"; NOT English \"oh\" (no glide to oo). One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "so",
+  "book": 1,
+  "ipa": "/so/",
+  "reported": false,
+  "stop": false,
+  "english": "English \"so\" (glide)",
+  "note": "clean \"s\", no \"sh\", no voicing. Vowel: pure round \"o\"; NOT English \"oh\" (no glide to oo). One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "ba",
+  "book": 2,
+  "ipa": "/ba/",
+  "reported": false,
+  "stop": true,
+  "english": "",
+  "note": "voiced, lips pop straight into the vowel; no \"buh\" before it. Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "be",
+  "book": 2,
+  "ipa": "/bɛ/",
+  "reported": true,
+  "stop": true,
+  "english": "English \"bay\"",
+  "note": "voiced, lips pop straight into the vowel; no \"buh\" before it. Vowel: mid front like \"e\" in bed or Spanish \"e\"; NOT English \"ay\" (no glide to ee). One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "bi",
+  "book": 2,
+  "ipa": "/bi/",
+  "reported": true,
+  "stop": true,
+  "english": "English \"bee\" (glide)",
+  "note": "voiced, lips pop straight into the vowel; no \"buh\" before it. Vowel: short, pure \"ee\"; no glide, not a long English \"see\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "bo",
+  "book": 2,
+  "ipa": "/bo/",
+  "reported": false,
+  "stop": true,
+  "english": "English \"bow/beau\" (glide)",
+  "note": "voiced, lips pop straight into the vowel; no \"buh\" before it. Vowel: pure round \"o\"; NOT English \"oh\" (no glide to oo). One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "bu",
+  "book": 2,
+  "ipa": "/bu/",
+  "reported": true,
+  "stop": true,
+  "english": "English \"boo\" (long)",
+  "note": "voiced, lips pop straight into the vowel; no \"buh\" before it. Vowel: short, pure \"oo\"; no glide, not a long English \"boo\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "me",
+  "book": 2,
+  "ipa": "/mɛ/",
+  "reported": false,
+  "stop": false,
+  "english": "",
+  "note": "lips closed, steady hum straight into the vowel. Vowel: mid front like \"e\" in bed or Spanish \"e\"; NOT English \"ay\" (no glide to ee). One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "se",
+  "book": 2,
+  "ipa": "/sɛ/",
+  "reported": true,
+  "stop": false,
+  "english": "English \"say\"",
+  "note": "clean \"s\", no \"sh\", no voicing. Vowel: mid front like \"e\" in bed or Spanish \"e\"; NOT English \"ay\" (no glide to ee). One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "mu",
+  "book": 2,
+  "ipa": "/mu/",
+  "reported": false,
+  "stop": false,
+  "english": "English \"moo\"",
+  "note": "lips closed, steady hum straight into the vowel. Vowel: short, pure \"oo\"; no glide, not a long English \"boo\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "su",
+  "book": 2,
+  "ipa": "/su/",
+  "reported": false,
+  "stop": false,
+  "english": "English \"sue\"",
+  "note": "clean \"s\", no \"sh\", no voicing. Vowel: short, pure \"oo\"; no glide, not a long English \"boo\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "ta",
+  "book": 3,
+  "ipa": "/t̪a/",
+  "reported": true,
+  "stop": true,
+  "english": "aspirated English \"tah\"",
+  "note": "tongue tip on the back of the upper teeth; NO puff of air, no \"tuh\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "te",
+  "book": 3,
+  "ipa": "/t̪ɛ/",
+  "reported": true,
+  "stop": true,
+  "english": "English \"tay\"",
+  "note": "tongue tip on the back of the upper teeth; NO puff of air, no \"tuh\". Vowel: mid front like \"e\" in bed or Spanish \"e\"; NOT English \"ay\" (no glide to ee). One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "ti",
+  "book": 3,
+  "ipa": "/t̪i/",
+  "reported": false,
+  "stop": true,
+  "english": "English \"tea\"",
+  "note": "tongue tip on the back of the upper teeth; NO puff of air, no \"tuh\". Vowel: short, pure \"ee\"; no glide, not a long English \"see\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "to",
+  "book": 3,
+  "ipa": "/t̪o/",
+  "reported": false,
+  "stop": true,
+  "english": "English \"toe\" (glide)",
+  "note": "tongue tip on the back of the upper teeth; NO puff of air, no \"tuh\". Vowel: pure round \"o\"; NOT English \"oh\" (no glide to oo). One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "tu",
+  "book": 3,
+  "ipa": "/t̪u/",
+  "reported": true,
+  "stop": true,
+  "english": "English \"too\" (puff + long)",
+  "note": "tongue tip on the back of the upper teeth; NO puff of air, no \"tuh\". Vowel: short, pure \"oo\"; no glide, not a long English \"boo\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "ka",
+  "book": 3,
+  "ipa": "/ka/",
+  "reported": false,
+  "stop": true,
+  "english": "",
+  "note": "NO puff of air (unlike English \"key\"), no \"kuh\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "ke",
+  "book": 3,
+  "ipa": "/kɛ/",
+  "reported": true,
+  "stop": true,
+  "english": "English \"kay\"",
+  "note": "NO puff of air (unlike English \"key\"), no \"kuh\". Vowel: mid front like \"e\" in bed or Spanish \"e\"; NOT English \"ay\" (no glide to ee). One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "ki",
+  "book": 3,
+  "ipa": "/ki/",
+  "reported": true,
+  "stop": true,
+  "english": "English \"key\" (puff + long)",
+  "note": "NO puff of air (unlike English \"key\"), no \"kuh\". Vowel: short, pure \"ee\"; no glide, not a long English \"see\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "ko",
+  "book": 3,
+  "ipa": "/ko/",
+  "reported": true,
+  "stop": true,
+  "english": "English \"koh-w\" (glide)",
+  "note": "NO puff of air (unlike English \"key\"), no \"kuh\". Vowel: pure round \"o\"; NOT English \"oh\" (no glide to oo). One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "ku",
+  "book": 3,
+  "ipa": "/ku/",
+  "reported": true,
+  "stop": true,
+  "english": "English \"coo\"",
+  "note": "NO puff of air (unlike English \"key\"), no \"kuh\". Vowel: short, pure \"oo\"; no glide, not a long English \"boo\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "la",
+  "book": 3,
+  "ipa": "/la/",
+  "reported": true,
+  "stop": false,
+  "english": "",
+  "note": "clear \"l\", tongue tip up; not the dark English \"l\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "le",
+  "book": 3,
+  "ipa": "/lɛ/",
+  "reported": true,
+  "stop": false,
+  "english": "English \"lay\"",
+  "note": "clear \"l\", tongue tip up; not the dark English \"l\". Vowel: mid front like \"e\" in bed or Spanish \"e\"; NOT English \"ay\" (no glide to ee). One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "li",
+  "book": 3,
+  "ipa": "/li/",
+  "reported": false,
+  "stop": false,
+  "english": "English \"lee\"",
+  "note": "clear \"l\", tongue tip up; not the dark English \"l\". Vowel: short, pure \"ee\"; no glide, not a long English \"see\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "lo",
+  "book": 3,
+  "ipa": "/lo/",
+  "reported": true,
+  "stop": false,
+  "english": "English \"low\" (glide)",
+  "note": "clear \"l\", tongue tip up; not the dark English \"l\". Vowel: pure round \"o\"; NOT English \"oh\" (no glide to oo). One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "lu",
+  "book": 3,
+  "ipa": "/lu/",
+  "reported": true,
+  "stop": false,
+  "english": "English \"loo\"",
+  "note": "clear \"l\", tongue tip up; not the dark English \"l\". Vowel: short, pure \"oo\"; no glide, not a long English \"boo\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "ya",
+  "book": 3,
+  "ipa": "/ja/",
+  "reported": false,
+  "stop": false,
+  "english": "",
+  "note": "glide into the vowel, like \"y\" in \"yes\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "ye",
+  "book": 3,
+  "ipa": "/jɛ/",
+  "reported": true,
+  "stop": false,
+  "english": "English \"yeah\" (also the recogniser hears it as \"yeah\")",
+  "note": "glide into the vowel, like \"y\" in \"yes\". Vowel: mid front like \"e\" in bed or Spanish \"e\"; NOT English \"ay\" (no glide to ee). One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "yo",
+  "book": 3,
+  "ipa": "/jo/",
+  "reported": false,
+  "stop": false,
+  "english": "English \"yo\"",
+  "note": "glide into the vowel, like \"y\" in \"yes\". Vowel: pure round \"o\"; NOT English \"oh\" (no glide to oo). One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "yu",
+  "book": 3,
+  "ipa": "/ju/",
+  "reported": true,
+  "stop": false,
+  "english": "English \"you\" (long, with a glide)",
+  "note": "glide into the vowel, like \"y\" in \"yes\". Vowel: short, pure \"oo\"; no glide, not a long English \"boo\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "na",
+  "book": 4,
+  "ipa": "/na/",
+  "reported": false,
+  "stop": false,
+  "english": "",
+  "note": "tongue tip at the teeth ridge. Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "ga",
+  "book": 4,
+  "ipa": "/ɡa/",
+  "reported": true,
+  "stop": true,
+  "english": "soft or aspirated \"g\"",
+  "note": "hard \"g\", voiced; no \"guh\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "pa",
+  "book": 4,
+  "ipa": "/pa/",
+  "reported": false,
+  "stop": true,
+  "english": "",
+  "note": "NO puff of air, lips only, no \"puh\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "ra",
+  "book": 4,
+  "ipa": "/ɾa/",
+  "reported": false,
+  "stop": false,
+  "english": "English \"r\" instead of a tap",
+  "note": "single quick tap of the tongue; not the English \"r\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "da",
+  "book": 4,
+  "ipa": "/d̪a/",
+  "reported": false,
+  "stop": true,
+  "english": "",
+  "note": "tongue tip on the upper teeth; no \"duh\". Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "ha",
+  "book": 4,
+  "ipa": "/ha/",
+  "reported": false,
+  "stop": false,
+  "english": "",
+  "note": "light breath, then the vowel. Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ },
+ {
+  "syllable": "wa",
+  "book": 4,
+  "ipa": "/wa/",
+  "reported": false,
+  "stop": false,
+  "english": "",
+  "note": "lips rounded, glide into the vowel. Vowel: open, short \"ah\"; do not drift to \"uh\" or \"aw\". One short sound, no extra \"uh\" after it.",
+  "seconds": "0.30 to 0.55"
+ }
+]

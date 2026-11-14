@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import type { AttemptRow } from "../content/report";
 
 export type Child = {
   id: string;
@@ -90,4 +91,18 @@ export async function completeUnit(
     | undefined;
   if (!row) throw new Error("No result from the server.");
   return { xp: row.new_xp, streak: row.new_streak, gained: row.gained };
+}
+
+/** The child's recent attempts (newest first), for the parent report. Only the parent's own children can be read. */
+export async function getAttempts(childId: string, days = 60): Promise<AttemptRow[]> {
+  const since = new Date(Date.now() - days * 86400000).toISOString();
+  const { data, error } = await supabase
+    .from("attempts")
+    .select("item, heard, kind, created_at")
+    .eq("child_id", childId)
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(1000);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as AttemptRow[];
 }

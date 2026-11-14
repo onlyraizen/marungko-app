@@ -1,0 +1,3 @@
+{
+  "_note": "Fix ladder step 1. When Soniox reads an item badly, put the text to send here, keyed by audio key (see audioKey). Example: \"saging\": \"sa, ging\". Letter sounds are NOT sent unless listed here (a bare letter is read by its name); the safe route for them is your own recording."
+}

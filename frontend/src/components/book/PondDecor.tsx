@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactElement } from "react";
 import { Animated, Easing, View } from "react-native";
 import { book } from "../../theme/book";
 
@@ -34,15 +34,7 @@ function Pad({ left, top, size, delay, flower = false }: { left: number; top: nu
         transform: [{ translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [0, 3] }) }],
       }}
     >
-      <View
-        style={{
-          flex: 1,
-          borderRadius: size / 2,
-          backgroundColor: book.pad,
-          borderBottomWidth: 3,
-          borderBottomColor: book.padDark,
-        }}
-      />
+      <View style={{ flex: 1, borderRadius: size / 2, backgroundColor: book.pad, borderBottomWidth: 3, borderBottomColor: book.padDark }} />
       <View
         style={{
           position: "absolute",
@@ -65,14 +57,14 @@ function Pad({ left, top, size, delay, flower = false }: { left: number; top: nu
   );
 }
 
-function Reed({ left, bottom, h, delay }: { left: number; bottom: number; h: number; delay: number }) {
+function Reed({ left, top, h, delay }: { left: number; top: number; h: number; delay: number }) {
   const sway = useLoop(2200, delay);
   return (
     <Animated.View
       style={{
         position: "absolute",
         left,
-        bottom,
+        top,
         width: 10,
         height: h,
         alignItems: "center",
@@ -108,19 +100,30 @@ function Sparkle({ left, top, delay }: { left: number; top: number; delay: numbe
   );
 }
 
-/** Living scenery for a pond page: lily pads, swaying reeds and twinkling water. */
+/**
+ * Living scenery for the whole pond path, repeated all the way down: lily pads, swaying reeds along
+ * both banks and twinkling water. The pond is one long scroll, so this repeats every 360 points.
+ */
 export default function PondDecor({ width, height }: { width: number; height: number }) {
+  const bands = Math.max(1, Math.ceil(height / 360));
+  const items: React.ReactElement[] = [];
+  for (let b = 0; b < bands; b += 1) {
+    const y = b * 360;
+    const flip = b % 2 === 0;
+    items.push(
+      <Pad key={`pad-a${b}`} left={flip ? width * 0.78 : width * 0.04} top={y + 70} size={46} delay={b * 300} flower={b % 2 === 0} />,
+      <Pad key={`pad-b${b}`} left={flip ? width * 0.04 : width * 0.8} top={y + 250} size={34} delay={500 + b * 200} />,
+      <Sparkle key={`sp-a${b}`} left={width * 0.5} top={y + 30} delay={b * 200} />,
+      <Sparkle key={`sp-b${b}`} left={width * 0.14} top={y + 160} delay={400 + b * 100} />,
+      <Sparkle key={`sp-c${b}`} left={width * 0.86} top={y + 200} delay={800} />,
+      <Sparkle key={`sp-d${b}`} left={width * 0.46} top={y + 320} delay={300} />,
+      <Reed key={`rd-a${b}`} left={flip ? 8 : width - 22} top={y + 190} h={70} delay={b * 400} />,
+      <Reed key={`rd-b${b}`} left={flip ? 24 : width - 38} top={y + 205} h={54} delay={700 + b * 100} />,
+    );
+  }
   return (
     <View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, width, height }}>
-      <Pad left={width * 0.8} top={90} size={46} delay={0} flower />
-      <Pad left={width * 0.05} top={height * 0.52} size={34} delay={500} />
-      <Sparkle left={width * 0.52} top={104} delay={0} />
-      <Sparkle left={width * 0.14} top={height * 0.3} delay={400} />
-      <Sparkle left={width * 0.86} top={height * 0.55} delay={800} />
-      <Sparkle left={width * 0.46} top={height - 70} delay={300} />
-      <Reed left={30} bottom={22} h={74} delay={0} />
-      <Reed left={46} bottom={18} h={56} delay={700} />
-      <Reed left={width - 38} bottom={26} h={66} delay={400} />
+      {items}
     </View>
   );
 }
