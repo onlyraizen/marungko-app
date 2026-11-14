@@ -27,6 +27,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     ...config.android,
     package: "com.marungko.app",
+    // No Google Drive backup of the app's data: the signed-in session must not be copied off the phone.
+    allowBackup: false,
     permissions: ["RECORD_AUDIO", "MODIFY_AUDIO_SETTINGS"],
   },
   plugins: [

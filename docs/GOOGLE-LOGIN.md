@@ -25,14 +25,14 @@ Supabase's Expo guide uses the native Google ID-token method (`@react-native-goo
 1. Google Cloud Console: create a project (menu names may differ; unverified). Open Google Auth Platform (OAuth consent screen): choose **External**, app name Basa-Bata, your support email. Scopes: `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile` only. Publishing status **Testing**; add each tester Gmail under Test users.
 2. Create an OAuth client, type **Web application**. Under **Authorized redirect URIs** add the callback URL that Supabase shows on its Google provider page (it looks like `https://<project-ref>.supabase.co/auth/v1/callback`). Do not add the app scheme here.
 3. Supabase Dashboard > Authentication > Providers > **Google**: enable it, paste the Web **Client ID** and **Client Secret** there. The secret goes only in the Supabase dashboard, never in the app, never in git.
-4. Supabase Dashboard > Authentication > URL Configuration > **Redirect URLs**: add `frontend://**` (the app's scheme is `frontend`, from app.json) and, only while testing in Expo Go, `exp://**`. Set **Site URL** to your Railway URL (not localhost). Remove `exp://**` before the final build.
-5. In Expo Go the redirect is `exp://<laptop-ip>:8081/--/auth-callback`; in the APK it is `frontend://auth-callback`.
+4. Supabase Dashboard > Authentication > URL Configuration > **Redirect URLs**: add `marungko://**` (the app's scheme is `marungko`, set in `frontend/app.config.ts`) and, only while testing in Expo Go, `exp://**`. Set **Site URL** to your Railway URL (not localhost). Remove `exp://**` before the final build.
+5. In Expo Go the redirect is `exp://<laptop-ip>:8081/--/auth-callback`; in the APK it is `marungko://auth-callback`.
 
 Most common mistakes and how to see them:
 | Mistake | Symptom |
 |---|---|
 | Redirect URI in Google differs from Supabase's callback | Google page: "Error 400: redirect_uri_mismatch" |
-| App redirect (`exp://` or `frontend://`) missing from Supabase Redirect URLs | Browser lands on the Site URL (or localhost) instead of returning to the app |
+| App redirect (`exp://` or `marungko://`) missing from Supabase Redirect URLs | Browser lands on the Site URL (or localhost) instead of returning to the app |
 | Wrong client type (Android/iOS instead of Web) | "invalid_client" or the provider rejects the secret |
 | Tester Gmail not in Test users | Google says "Access blocked: app has not completed verification" |
 | Client secret empty or pasted for another client | Supabase shows an error JSON after Google |
@@ -85,7 +85,7 @@ Pilot to measure false rejects: with parental consent, 3 to 5 children say 20 wo
 | Right answers | Say "mali", "bola", "yelo" | Tama |
 
 ## 8. Risks and open questions
-- Expo Go return from Google is unverified; if it fails, test in the APK (`frontend://` scheme).
+- Expo Go return from Google is unverified; if it fails, test in the APK (`marungko://` scheme).
 - 100-test-user cap and 7-day refresh expiry in Testing mode (Google), and the 7-day project pause (Supabase) can break a pilot week.
 - Brevo SMTP on the free plan and Resend sending without a domain: unverified.
 - I cannot hear audio or reach Supabase, Google or Soniox from here.

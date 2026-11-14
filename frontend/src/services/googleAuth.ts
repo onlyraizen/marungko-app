@@ -9,7 +9,7 @@ import { supabase } from "./supabase";
  * development build, so it is not used here.
  *
  * The redirect address must be in Supabase > Authentication > URL Configuration > Redirect URLs:
- *   frontend://**        (installed app, scheme from app.json)
+ *   marungko://**        (installed app, scheme from app.config.ts)
  *   exp://**             (Expo Go while testing; remove before the thesis build goes out)
  * See docs/GOOGLE-LOGIN.md.
  */
