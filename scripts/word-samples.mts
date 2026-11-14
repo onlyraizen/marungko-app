@@ -2,6 +2,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { audioKey } from "../packages/shared/dist/index.js";
+import { shortenInnerGaps } from "./lib/shorten-gap.mts";
 
 /**
  * Listening samples for the two words that failed before: "mais" (should be ma-ÍS, a clear /i/) and "kanin"
@@ -11,6 +12,7 @@ import { audioKey } from "../packages/shared/dist/index.js";
  *   pnpm content:word-samples                     dry run: lists the versions, spends nothing
  *   pnpm content:word-samples -- --yes            makes ~/word-samples/mais_A.wav ... kanin_F.wav and index.html
  *   pnpm content:word-samples -- --apply mais=C,kanin=E     copies the chosen versions into the app
+ *   pnpm content:word-samples -- --apply kanin=D --gap-ms 60   same, and shortens any pause inside the word to 60 ms
  *   then: pnpm content:normalize-audio   (same loudness as every other clip; trims the silence)
  *
  * Add --voice Maya (default) or --out-dir <folder>. How Soniox reads each respelling is NOT verified: that is
@@ -58,7 +60,16 @@ if (apply !== undefined) {
     const variant = VARIANTS[word]?.find((candidate) => candidate.id === id.toUpperCase());
     const file = join(outDir, `${word}_${id.toUpperCase()}.wav`);
     if (!variant || !existsSync(file)) throw new Error(`No sample ${word}_${id}: check the name and ${outDir}`);
-    copyFileSync(file, join(assetsDir, `${audioKey(word)}.wav`));
+    const target = join(assetsDir, `${audioKey(word)}.wav`);
+    const gapMs = Number(option("gap-ms") ?? "0");
+    const shortened = gapMs > 0 ? shortenInnerGaps(readFileSync(file), gapMs) : null;
+    if (shortened) {
+      writeFileSync(target, shortened.out);
+      console.log(`  cut ${shortened.cutMs} ms of silence inside ${word} (kept ${gapMs} ms).`);
+    } else {
+      copyFileSync(file, target);
+      if (gapMs > 0) console.log(`  no pause longer than ${gapMs} ms found in ${word}: copied as it is.`);
+    }
     meta[audioKey(word)] = { text: variant.text, voice, model: "tts-rt-v2", language: "tl", variant: `sample ${id.toUpperCase()}`, speed: variant.speed ?? 1, pickedAt: new Date().toISOString() };
     console.log(`Replaced ${word}.wav with version ${id.toUpperCase()} (${variant.text}).`);
   }
